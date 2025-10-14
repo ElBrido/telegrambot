@@ -5,18 +5,29 @@ Bot profesional de Telegram para verificación de tarjetas de crédito, búsqued
 ## 🌟 Características
 
 ### Funcionalidades Principales
-- ✅ **Verificación de Tarjetas (CCN Check)**: Verifica si una tarjeta está activa o inactiva
-- 🔍 **Búsqueda de BIN**: Obtén información detallada sobre cualquier BIN
-- 💳 **Generación Masiva de Tarjetas**: Genera múltiples tarjetas válidas con un BIN específico (Premium)
-- 🎭 **Sistema de Roles**: Admin/Owner con permisos diferenciados
-- 🔑 **Sistema Premium**: Claves de acceso con duración limitada
-- 📊 **Estadísticas de Usuario**: Seguimiento de verificaciones realizadas
+- ✅ **Verificación de Tarjetas (CCN Check)**: Verifica si una tarjeta está activa o inactiva usando algoritmo Luhn
+- 💰 **Prueba de Cargo**: Simula cargo de $1.00 para verificar aprobación (Premium/Admin)
+- 🔐 **Verificador VBV/3D Secure**: Verifica estado de Verified by Visa (Premium/Admin)
+- 📊 **Estado de Tarjeta**: Verifica si está activa o inactiva con disponibilidad de saldo (Premium/Admin)
+- 🔍 **Búsqueda de BIN**: Obtén información detallada sobre cualquier BIN (tipo, red, emisor, país)
+- 💳 **Generación Masiva de Tarjetas**: Genera hasta 50 tarjetas válidas con un BIN específico (Premium)
+- 🎭 **Sistema de Roles**: User/Admin/Owner con permisos diferenciados
+- 🔑 **Sistema Premium**: Claves de acceso con duración configurable
+- 📈 **Estadísticas Completas**: Seguimiento de verificaciones y estadísticas globales
 
 ### Interfaz y Usabilidad
-- 🎬 **Panel de Inicio con GIF**: Bienvenida animada profesional
+- 🎬 **Panel de Inicio con GIF**: Bienvenida animada profesional personalizable
 - 🔘 **Menú Interactivo**: Botones inline para fácil navegación
-- 📝 **Comandos Flexibles**: Soporta comandos con `/` o `..`
-- 💬 **Mensajes Formatados**: Respuestas claras y profesionales
+- 📝 **Comandos Flexibles**: Soporta comandos con `/`, `.` o `..`
+- 💬 **Mensajes Formatados**: Respuestas claras con Markdown y emojis
+- 🐳 **Docker Ready**: Despliegue fácil con Docker y docker-compose
+
+### Comandos de Verificación
+- `/ccn` o `.chk` - Verificación básica de tarjeta
+- `/ch` - Prueba de cargo (Premium/Admin)
+- `/vbv` - Verificador VBV/3D Secure (Premium/Admin)
+- `/cardstatus` - Estado activo/inactivo (Premium/Admin)
+- `/bin` - Búsqueda de información BIN
 
 ## 📦 Instalación
 
@@ -73,6 +84,34 @@ cp config.example.ini config.ini
 python bot.py
 ```
 
+### 🐳 Instalación con Docker (Recomendado para Producción)
+
+1. **Instala Docker y Docker Compose**
+```bash
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+```
+
+2. **Clona y configura:**
+```bash
+git clone https://github.com/ElBrido/telegrambot.git
+cd telegrambot
+cp config.example.ini config.ini
+# Edita config.ini con tu configuración
+```
+
+3. **Ejecuta con Docker Compose:**
+```bash
+docker-compose up -d
+```
+
+4. **Ver logs:**
+```bash
+docker-compose logs -f
+```
+
+Ver **[DEPLOYMENT.md](DEPLOYMENT.md)** para más opciones de despliegue (VPS, Cloud, PM2, etc.)
+
 ## ⚙️ Configuración
 
 ### Obtener Token de Bot
@@ -123,8 +162,16 @@ Para obtener tu ID de Telegram, puedes usar [@userinfobot](https://t.me/userinfo
 
 | Comando | Alternativa | Descripción | Ejemplo |
 |---------|-------------|-------------|---------|
-| `/ccn <tarjeta>` | `..ccn <tarjeta>` | Verifica una tarjeta | `/ccn 4532015112830366` |
-| `/bin <bin>` | `..bin <bin>` | Busca información de BIN | `/bin 453201` |
+| `/ccn <tarjeta>` | `.chk <tarjeta>` | Verifica una tarjeta | `/ccn 4532015112830366\|12\|25\|123` |
+| `/bin <bin>` | `.bin <bin>` | Busca información de BIN | `/bin 453201` |
+
+### Comandos Avanzados (Premium/Admin)
+
+| Comando | Alternativa | Descripción | Ejemplo |
+|---------|-------------|-------------|---------|
+| `/ch <tarjeta>` | `.ch <tarjeta>` | Prueba de cargo | `/ch 4532015112830366\|12\|25\|123` |
+| `/vbv <tarjeta>` | `.vbv <tarjeta>` | Verificador VBV/3D Secure | `/vbv 4532015112830366\|12\|25\|123` |
+| `/cardstatus <tarjeta>` | `.cardstatus <tarjeta>` | Estado activa/inactiva | `/cardstatus 4532015112830366\|12\|25\|123` |
 
 ### Comandos Premium
 
@@ -233,10 +280,26 @@ source venv/bin/activate
 python bot.py
 ```
 
+## 📚 Documentación Completa
+
+Este proyecto incluye documentación extensa para facilitar el uso y desarrollo:
+
+- 📖 **[README.md](README.md)** - Este archivo, guía principal
+- 🚀 **[QUICKSTART.md](QUICKSTART.md)** - Inicio rápido en 5 minutos
+- 📋 **[COMMANDS.md](COMMANDS.md)** - Referencia completa de comandos
+- ❓ **[FAQ.md](FAQ.md)** - Preguntas frecuentes
+- 🚀 **[DEPLOYMENT.md](DEPLOYMENT.md)** - Guías de despliegue (Docker, VPS, Cloud)
+- 🏗️ **[ARCHITECTURE.md](ARCHITECTURE.md)** - Arquitectura y diseño del sistema
+- 📝 **[CHANGELOG.md](CHANGELOG.md)** - Historial de cambios
+- 🤝 **[CONTRIBUTING.md](CONTRIBUTING.md)** - Guía para contribuidores
+- 📊 **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Resumen de implementación
+- 📸 **[EXAMPLES.md](EXAMPLES.md)** - Ejemplos de uso
+
 ## 🤝 Contribución
 
-Las contribuciones son bienvenidas. Por favor:
+Las contribuciones son bienvenidas. Por favor lee **[CONTRIBUTING.md](CONTRIBUTING.md)** para más detalles.
 
+Resumen rápido:
 1. Fork el repositorio
 2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
 3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
