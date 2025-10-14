@@ -51,6 +51,10 @@ class CardUtils:
         if len(card_number) < 13 or len(card_number) > 19:
             return False
         
+        # Check for all zeros or all same digits
+        if len(set(card_number)) == 1:
+            return False
+        
         return CardUtils.luhn_checksum(card_number) == 0
     
     @staticmethod
