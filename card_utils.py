@@ -166,3 +166,73 @@ class CardUtils:
         month = str(random.randint(1, 12)).zfill(2)
         year = str(random.randint(25, 30))
         return f"{month}/{year}"
+    
+    @staticmethod
+    def parse_card_input(input_str: str) -> Dict[str, Optional[str]]:
+        """
+        Parse card input in professional checker format
+        Supports formats:
+        - card|mm|yy|cvv (full card with expiry and CVV)
+        - card|mm|yy (card with expiry)
+        - bin|mm|yy (BIN with expiry for generation)
+        - plain card number or BIN
+        
+        Returns dict with keys: card/bin, month, year, cvv
+        """
+        input_str = input_str.strip()
+        
+        # Check if input contains pipe delimiter
+        if '|' in input_str:
+            parts = input_str.split('|')
+            
+            # Clean up parts (remove whitespace)
+            parts = [p.strip() for p in parts]
+            
+            result = {
+                'card': parts[0] if parts[0] else None,
+                'month': None,
+                'year': None,
+                'cvv': None
+            }
+            
+            # Parse month (index 1)
+            if len(parts) > 1 and parts[1]:
+                month = parts[1].zfill(2) if parts[1].isdigit() else None
+                # Validate month (1-12)
+                if month and 1 <= int(month) <= 12:
+                    result['month'] = month
+            
+            # Parse year (index 2)
+            if len(parts) > 2 and parts[2]:
+                year = parts[2]
+                # Convert 2-digit year to 2-digit format (25-99)
+                if year.isdigit():
+                    if len(year) == 4:
+                        year = year[-2:]  # Take last 2 digits
+                    result['year'] = year.zfill(2)
+            
+            # Parse CVV (index 3)
+            if len(parts) > 3 and parts[3]:
+                cvv = parts[3]
+                if cvv.isdigit() and len(cvv) in [3, 4]:
+                    result['cvv'] = cvv
+            
+            return result
+        else:
+            # Plain input (just card/BIN number)
+            return {
+                'card': input_str,
+                'month': None,
+                'year': None,
+                'cvv': None
+            }
+    
+    @staticmethod
+    def format_expiry(month: Optional[str], year: Optional[str]) -> Optional[str]:
+        """
+        Format month and year into expiry date string
+        Returns format: MM/YY or None if both are None
+        """
+        if month and year:
+            return f"{month}/{year}"
+        return None

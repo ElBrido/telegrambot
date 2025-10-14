@@ -129,12 +129,22 @@ Usa los botones del menú o comandos con / o ..
         if not context.args:
             await update.message.reply_text(
                 "❌ Uso: /ccn <número_de_tarjeta>\n"
-                "Ejemplo: /ccn 4532015112830366"
+                "Formatos aceptados:\n"
+                "• /ccn 4532015112830366\n"
+                "• /ccn 4532015112830366|12|28|123"
             )
             return
         
-        card_number = ''.join(context.args)
+        input_str = ''.join(context.args)
         user_id = update.effective_user.id
+        
+        # Parse input to extract card and optional details
+        parsed = self.card_utils.parse_card_input(input_str)
+        card_number = parsed['card']
+        
+        if not card_number:
+            await update.message.reply_text("❌ Número de tarjeta inválido")
+            return
         
         # Check card
         result = self.card_utils.check_card_status(card_number)
@@ -142,11 +152,20 @@ Usa los botones del menú o comandos con / o ..
         # Log to database
         self.db.add_card_check(user_id, card_number, result['status'])
         
+        # Build response with extra details if provided
+        extra_info = ""
+        if parsed['month'] or parsed['year']:
+            expiry = self.card_utils.format_expiry(parsed['month'], parsed['year'])
+            if expiry:
+                extra_info += f"📅 Exp: {expiry}\n"
+        if parsed['cvv']:
+            extra_info += f"🔐 CVV: {parsed['cvv']}\n"
+        
         response = f"""
 🔍 **Verificación de Tarjeta**
 
 💳 Tarjeta: `{result['card']}`
-{result['message']}
+{extra_info}{result['message']}
 
 Estado: {result['status']}
         """
@@ -158,16 +177,34 @@ Estado: {result['status']}
         if not context.args:
             await update.message.reply_text(
                 "❌ Uso: /bin <bin_número>\n"
-                "Ejemplo: /bin 453201"
+                "Formatos aceptados:\n"
+                "• /bin 453201\n"
+                "• /bin 453201|12|28"
             )
             return
         
-        bin_number = context.args[0]
+        input_str = ''.join(context.args)
+        
+        # Parse input to extract BIN and optional expiry
+        parsed = self.card_utils.parse_card_input(input_str)
+        bin_number = parsed['card']
+        
+        if not bin_number:
+            await update.message.reply_text("❌ BIN inválido")
+            return
+        
         bin_info = self.card_utils.get_bin_info(bin_number)
         
         if "error" in bin_info:
             await update.message.reply_text(f"❌ {bin_info['error']}")
             return
+        
+        # Add expiry info if provided
+        extra_info = ""
+        if parsed['month'] or parsed['year']:
+            expiry = self.card_utils.format_expiry(parsed['month'], parsed['year'])
+            if expiry:
+                extra_info = f"📅 Exp sugerida: {expiry}\n"
         
         response = f"""
 🔍 **Información BIN**
@@ -177,6 +214,7 @@ Estado: {result['status']}
 🌐 Red: {bin_info['network']}
 🏢 Emisor: {bin_info.get('issuer', 'N/A')}
 🌍 País: {bin_info.get('country', 'N/A')}
+{extra_info}
         """
         
         await update.message.reply_text(response, parse_mode='Markdown')
@@ -197,11 +235,21 @@ Estado: {result['status']}
         if len(context.args) < 1:
             await update.message.reply_text(
                 "❌ Uso: /gen <bin> [cantidad]\n"
-                "Ejemplo: /gen 453201 10"
+                "Formatos aceptados:\n"
+                "• /gen 453201 10\n"
+                "• /gen 453201|12|28 10"
             )
             return
         
-        bin_prefix = context.args[0]
+        # Parse first argument to extract BIN and optional expiry
+        parsed = self.card_utils.parse_card_input(context.args[0])
+        bin_prefix = parsed['card']
+        custom_expiry = self.card_utils.format_expiry(parsed['month'], parsed['year'])
+        
+        if not bin_prefix:
+            await update.message.reply_text("❌ BIN inválido")
+            return
+        
         count = int(context.args[1]) if len(context.args) > 1 else 10
         
         # Limit count
@@ -217,7 +265,8 @@ Estado: {result['status']}
         formatted_cards = []
         for card in cards:
             cvv = self.card_utils.generate_random_cvv()
-            expiry = self.card_utils.generate_random_expiry()
+            # Use custom expiry if provided, otherwise generate random
+            expiry = custom_expiry if custom_expiry else self.card_utils.generate_random_expiry()
             formatted_cards.append(f"`{self.card_utils.format_card_number(card)}|{expiry}|{cvv}`")
         
         response = f"""
@@ -312,18 +361,32 @@ Duración: {self.key_duration} días
 
 **Verificación:**
 • `/ccn <tarjeta>` - Verificar tarjeta
+  Ejemplos:
+  `/ccn 4532015112830366`
+  `/ccn 4532015112830366|12|28|123`
+  
 • `/bin <bin>` - Buscar información BIN
+  Ejemplos:
+  `/bin 453201`
+  `/bin 453201|12|28`
 
 **Premium:**
 • `/gen <bin> [cant]` - Generar tarjetas (Premium)
+  Ejemplos:
+  `/gen 453201 10`
+  `/gen 453201|12|28 10`
+  
 • `/key <clave>` - Activar clave premium
 • `/stats` - Ver tus estadísticas
 
 **Admin:**
 • `/genkey [cant]` - Generar claves premium
 
+💡 **Formato profesional:**
+Usa el formato `tarjeta|mes|año|cvv` para inputs completos
+Ejemplo: `4532015112830366|04|31|123`
+
 💡 **Tip:** Puedes usar `/` o `..` antes de cualquier comando
-Ejemplo: `/menu` o `..menu`
         """
         
         await update.message.reply_text(help_text, parse_mode='Markdown')
@@ -339,14 +402,18 @@ Ejemplo: `/menu` o `..menu`
             await query.message.reply_text(
                 "💳 **Verificar Tarjeta**\n\n"
                 "Usa: /ccn <número_de_tarjeta>\n"
-                "Ejemplo: /ccn 4532015112830366",
+                "Ejemplos:\n"
+                "• /ccn 4532015112830366\n"
+                "• /ccn 4532015112830366|12|28|123",
                 parse_mode='Markdown'
             )
         elif query.data == 'bin_lookup':
             await query.message.reply_text(
                 "🔍 **Buscar BIN**\n\n"
                 "Usa: /bin <bin_número>\n"
-                "Ejemplo: /bin 453201",
+                "Ejemplos:\n"
+                "• /bin 453201\n"
+                "• /bin 453201|12|28",
                 parse_mode='Markdown'
             )
         elif query.data == 'gen_cards':
@@ -360,7 +427,9 @@ Ejemplo: `/menu` o `..menu`
                 await query.message.reply_text(
                     "💳 **Generar Tarjetas**\n\n"
                     "Usa: /gen <bin> [cantidad]\n"
-                    "Ejemplo: /gen 453201 10",
+                    "Ejemplos:\n"
+                    "• /gen 453201 10\n"
+                    "• /gen 453201|12|28 10",
                     parse_mode='Markdown'
                 )
         elif query.data == 'activate_key':

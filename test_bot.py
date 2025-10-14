@@ -136,6 +136,110 @@ def test_card_formatting():
     print("✅ Card formatting tests passed!\n")
 
 
+def test_input_parsing():
+    """Test pipe-delimited input parsing"""
+    print("Testing input parsing...")
+    
+    # Test full format: card|mm|yy|cvv
+    test_cases = [
+        {
+            "input": "4532015112830366|12|28|123",
+            "expected": {
+                "card": "4532015112830366",
+                "month": "12",
+                "year": "28",
+                "cvv": "123"
+            }
+        },
+        {
+            "input": "515462002002|04|31",
+            "expected": {
+                "card": "515462002002",
+                "month": "04",
+                "year": "31",
+                "cvv": None
+            }
+        },
+        {
+            "input": "111111|0|0|",
+            "expected": {
+                "card": "111111",
+                "month": None,  # 0 is invalid month
+                "year": "00",
+                "cvv": None
+            }
+        },
+        {
+            "input": "453201|12|28",
+            "expected": {
+                "card": "453201",
+                "month": "12",
+                "year": "28",
+                "cvv": None
+            }
+        },
+        {
+            "input": "4532015112830366",
+            "expected": {
+                "card": "4532015112830366",
+                "month": None,
+                "year": None,
+                "cvv": None
+            }
+        },
+        {
+            "input": "453201|4|2031|456",
+            "expected": {
+                "card": "453201",
+                "month": "04",  # Should pad to 2 digits
+                "year": "31",   # Should take last 2 digits from 2031
+                "cvv": "456"
+            }
+        }
+    ]
+    
+    for test in test_cases:
+        result = CardUtils.parse_card_input(test["input"])
+        expected = test["expected"]
+        
+        assert result["card"] == expected["card"], \
+            f"Card mismatch for '{test['input']}': expected {expected['card']}, got {result['card']}"
+        assert result["month"] == expected["month"], \
+            f"Month mismatch for '{test['input']}': expected {expected['month']}, got {result['month']}"
+        assert result["year"] == expected["year"], \
+            f"Year mismatch for '{test['input']}': expected {expected['year']}, got {result['year']}"
+        assert result["cvv"] == expected["cvv"], \
+            f"CVV mismatch for '{test['input']}': expected {expected['cvv']}, got {result['cvv']}"
+        
+        print(f"  ✅ {test['input']} → parsed correctly")
+    
+    print("✅ Input parsing tests passed!\n")
+
+
+def test_expiry_formatting():
+    """Test expiry date formatting"""
+    print("Testing expiry formatting...")
+    
+    test_cases = [
+        {"month": "12", "year": "28", "expected": "12/28"},
+        {"month": "04", "year": "31", "expected": "04/31"},
+        {"month": None, "year": "28", "expected": None},
+        {"month": "12", "year": None, "expected": None},
+        {"month": None, "year": None, "expected": None},
+    ]
+    
+    for test in test_cases:
+        result = CardUtils.format_expiry(test["month"], test["year"])
+        expected = test["expected"]
+        
+        assert result == expected, \
+            f"Expiry format mismatch: expected {expected}, got {result}"
+        
+        print(f"  ✅ ({test['month']}, {test['year']}) → {result}")
+    
+    print("✅ Expiry formatting tests passed!\n")
+
+
 def run_all_tests():
     """Run all tests"""
     print("=" * 50)
@@ -149,6 +253,8 @@ def run_all_tests():
         test_bin_lookup()
         test_database_operations()
         test_card_formatting()
+        test_input_parsing()
+        test_expiry_formatting()
         
         print("=" * 50)
         print("✅ ALL TESTS PASSED!")
