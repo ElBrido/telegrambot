@@ -104,9 +104,9 @@ def test_database_operations():
     
     # Test premium keys
     key_code = "TEST123KEY"
-    assert db.create_premium_key(key_code), "Key creation failed"
+    assert db.create_premium_key(key_code, 720), "Key creation failed"  # 720 hours = 30 days
     
-    success, msg = db.activate_premium_key(12345, key_code, 30)
+    success, msg = db.activate_premium_key(12345, key_code)
     assert success, f"Key activation failed: {msg}"
     
     assert db.has_premium(12345), "Premium check failed"

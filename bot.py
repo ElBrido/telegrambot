@@ -384,7 +384,7 @@ Saldo: {'Disponible' if is_active else 'No Disponible'}
         if not (self.db.has_premium(user_id) or self.db.is_admin(user_id)):
             await update.message.reply_text(
                 "❌ Esta función requiere **Premium**\n"
-                "Usa /key <clave> para activar premium",
+                "Usa /redeem <clave> para activar premium",
                 parse_mode='Markdown'
             )
             return
@@ -440,18 +440,18 @@ Saldo: {'Disponible' if is_active else 'No Disponible'}
         await update.message.reply_text(response, parse_mode='Markdown')
 
     async def activate_key_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /key or ..key command"""
+        """Handle /redeem or ..redeem command"""
         if not context.args:
             await update.message.reply_text(
-                "❌ Uso: /key <clave_premium>\n"
-                "Ejemplo: /key ABC123XYZ"
+                "❌ Uso: /redeem <clave_premium>\n"
+                "Ejemplo: /redeem ABC123XYZ"
             )
             return
         
         key_code = context.args[0]
         user_id = update.effective_user.id
         
-        success, message = self.db.activate_premium_key(user_id, key_code, self.key_duration)
+        success, message = self.db.activate_premium_key(user_id, key_code)
         
         await update.message.reply_text(message)
 
@@ -463,14 +463,54 @@ Saldo: {'Disponible' if is_active else 'No Disponible'}
             await update.message.reply_text("❌ No tienes permiso para usar este comando")
             return
         
-        count = int(context.args[0]) if context.args else 1
-        count = min(count, 20)  # Limit to 20 keys
+        # Parse arguments: count and duration
+        count = 1
+        duration_hours = 720  # Default 30 days
+        
+        if context.args:
+            try:
+                count = int(context.args[0])
+                count = min(count, 20)  # Limit to 20 keys
+                
+                # Check if duration is specified
+                if len(context.args) > 1:
+                    duration_str = context.args[1]
+                    # Parse duration with unit (e.g., "5h", "30m", "3600s", "1d")
+                    if duration_str.endswith('s'):
+                        duration_hours = int(duration_str[:-1]) / 3600
+                    elif duration_str.endswith('m'):
+                        duration_hours = int(duration_str[:-1]) / 60
+                    elif duration_str.endswith('h'):
+                        duration_hours = int(duration_str[:-1])
+                    elif duration_str.endswith('d'):
+                        duration_hours = int(duration_str[:-1]) * 24
+                    else:
+                        # Default to hours if no unit specified
+                        duration_hours = int(duration_str)
+            except (ValueError, IndexError):
+                await update.message.reply_text(
+                    "❌ Uso: /genkey [cantidad] [duración]\n"
+                    "Ejemplos:\n"
+                    "• /genkey 5 24h - 5 claves de 24 horas\n"
+                    "• /genkey 3 30m - 3 claves de 30 minutos\n"
+                    "• /genkey 10 3600s - 10 claves de 3600 segundos\n"
+                    "• /genkey 2 7d - 2 claves de 7 días"
+                )
+                return
         
         keys = []
         for _ in range(count):
-            key_code = secrets.token_urlsafe(12)
-            if self.db.create_premium_key(key_code):
+            key_code = secrets.token_urlsafe(32)  # Increased from 12 to 32 for better security
+            if self.db.create_premium_key(key_code, int(duration_hours)):
                 keys.append(f"`{key_code}`")
+        
+        # Format duration for display
+        if duration_hours >= 24:
+            duration_display = f"{duration_hours/24:.1f} días"
+        elif duration_hours >= 1:
+            duration_display = f"{duration_hours:.1f} horas"
+        else:
+            duration_display = f"{duration_hours*60:.0f} minutos"
         
         response = f"""
 🔑 **Claves Premium Generadas**
@@ -479,7 +519,7 @@ Cantidad: {len(keys)}
 
 {chr(10).join(keys)}
 
-Duración: {self.key_duration} días
+Duración: {duration_display}
         """
         
         await update.message.reply_text(response, parse_mode='Markdown')
@@ -547,14 +587,15 @@ Duración: {self.key_duration} días
   `.gen 453201|12|28 10`
   `.mass 453201` - Genera 10 tarjetas
   
-• `/key <clave>` - Activar clave premium
+• `/redeem <clave>` - Activar clave premium
 • `/stats` - Ver tus estadísticas
 """
 
         if is_admin:
             help_text += """
 **Comandos de Administración:**
-• `/genkey [cantidad]` - Generar claves premium
+• `/genkey [cantidad] [duración]` - Generar claves premium
+  Ejemplos: /genkey 5 24h, /genkey 3 30m, /genkey 2 7d
 • `/ban <user_id>` - Banear usuario
 • `/unban <user_id>` - Desbanear usuario
 • `/addcredits <user_id> <cantidad>` - Agregar créditos
@@ -602,7 +643,7 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
             if not (self.db.has_premium(user_id) or self.db.is_admin(user_id)):
                 await query.message.reply_text(
                     "❌ Esta función requiere **Premium**\n"
-                    "Usa /key <clave> para activar premium",
+                    "Usa /redeem <clave> para activar premium",
                     parse_mode='Markdown'
                 )
             else:
@@ -617,8 +658,8 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
         elif query.data == 'activate_key':
             await query.message.reply_text(
                 "🔑 **Activar Clave Premium**\n\n"
-                "Usa: /key <clave_premium>\n"
-                "Ejemplo: /key ABC123XYZ",
+                "Usa: /redeem <clave_premium>\n"
+                "Ejemplo: /redeem ABC123XYZ",
                 parse_mode='Markdown'
             )
         elif query.data == 'stats':
@@ -645,7 +686,8 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
                 await query.message.reply_text(
                     "⚙️ **Panel de Administración Completo**\n\n"
                     "**Gestión de Claves:**\n"
-                    "• /genkey [cantidad] - Generar claves premium\n\n"
+                    "• /genkey [cantidad] [duración] - Generar claves premium\n"
+                    "  Ejemplos: /genkey 5 24h, /genkey 3 30m, /genkey 2 7d\n\n"
                     "**Gestión de Usuarios:**\n"
                     "• /ban <user_id> - Banear usuario\n"
                     "• /unban <user_id> - Desbanear usuario\n"
@@ -704,7 +746,8 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
             if is_admin:
                 help_text += """
 **Comandos de Administración:**
-• `/genkey [cantidad]` - Generar claves premium
+• `/genkey [cantidad] [duración]` - Generar claves premium
+  Ejemplos: /genkey 5 24h, /genkey 3 30m, /genkey 2 7d
 • `/ban <user_id>` - Banear usuario
 • `/unban <user_id>` - Desbanear usuario
 • `/addcredits <user_id> <cantidad>` - Agregar créditos
@@ -871,7 +914,7 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
         elif command == 'gen' or command == 'mass':
             context.args = args
             await self.generate_cards_command(update, context)
-        elif command == 'key':
+        elif command == 'key' or command == 'redeem':
             context.args = args
             await self.activate_key_command(update, context)
         elif command == 'stats':
@@ -898,7 +941,8 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
         application.add_handler(CommandHandler("cardstatus", self.card_status_command))  # Card status
         application.add_handler(CommandHandler("bin", self.bin_lookup_command))
         application.add_handler(CommandHandler("gen", self.generate_cards_command))
-        application.add_handler(CommandHandler("key", self.activate_key_command))
+        application.add_handler(CommandHandler("key", self.activate_key_command))  # Legacy support
+        application.add_handler(CommandHandler("redeem", self.activate_key_command))  # New command
         application.add_handler(CommandHandler("stats", self.stats_command))
         application.add_handler(CommandHandler("help", self.help_command))
         
