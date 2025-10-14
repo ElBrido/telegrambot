@@ -89,7 +89,7 @@ def test_database_operations():
     db = Database(test_db)
     
     # Test user operations
-    db.add_user(12345, "testuser", "user")
+    db.add_user(12345, "testuser", "Test", "User", "user")
     user = db.get_user(12345)
     assert user is not None, "User not found"
     assert user["username"] == "testuser", "Username mismatch"
@@ -97,7 +97,7 @@ def test_database_operations():
     print("  ✅ User operations work")
     
     # Test role system
-    db.add_user(67890, "adminuser", "admin")
+    db.add_user(67890, "adminuser", "Admin", "User", "admin")
     assert db.is_admin(67890), "Admin check failed"
     assert not db.is_owner(67890), "Owner check failed"
     print("  ✅ Role system works")
