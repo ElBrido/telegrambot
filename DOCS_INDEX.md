@@ -176,17 +176,18 @@ Welcome to the Supreme Card Checker Bot documentation! This index helps you find
 
 | Document | Lines | Purpose |
 |----------|-------|---------|
-| README.md | 600+ | Main documentation |
-| QUICKSTART.md | 100+ | Quick setup |
-| DEPLOYMENT.md | 250+ | Production deployment |
-| COMMANDS.md | 350+ | Command reference |
-| FAQ.md | 400+ | Questions & answers |
-| CONTRIBUTING.md | 150+ | Contribution guide |
-| CHANGELOG.md | 250+ | Version history |
-| ARCHITECTURE.md | 600+ | Technical details |
-| PROJECT_SUMMARY.md | 450+ | Project overview |
-| SCREENSHOTS.md | 450+ | Interface preview |
-| **TOTAL** | **3,600+** | Complete documentation |
+| README.md | 230 | Main documentation |
+| QUICKSTART.md | 111 | Quick setup |
+| DEPLOYMENT.md | 324 | Production deployment |
+| COMMANDS.md | 384 | Command reference |
+| FAQ.md | 265 | Questions & answers |
+| CONTRIBUTING.md | 90 | Contribution guide |
+| CHANGELOG.md | 171 | Version history |
+| ARCHITECTURE.md | 468 | Technical details |
+| PROJECT_SUMMARY.md | 412 | Project overview |
+| SCREENSHOTS.md | 449 | Interface preview |
+| DOCS_INDEX.md | 343 | Documentation navigator |
+| **TOTAL** | **3,247** | Complete documentation |
 
 ---
 
