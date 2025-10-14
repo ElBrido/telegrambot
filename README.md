@@ -1,5 +1,14 @@
 # 🦇 BatmanWL Bot - Premium Telegram Bot 🦇
 
+```
+██████╗  █████╗ ████████╗███╗   ███╗ █████╗ ███╗   ██╗██╗    ██╗██╗     
+██╔══██╗██╔══██╗╚══██╔══╝████╗ ████║██╔══██╗████╗  ██║██║    ██║██║     
+██████╔╝███████║   ██║   ██╔████╔██║███████║██╔██╗ ██║██║ █╗ ██║██║     
+██╔══██╗██╔══██║   ██║   ██║╚██╔╝██║██╔══██║██║╚██╗██║██║███╗██║██║     
+██████╔╝██║  ██║   ██║   ██║ ╚═╝ ██║██║  ██║██║ ╚████║╚███╔███╔╝███████╗
+╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚══╝╚══╝ ╚══════╝
+```
+
 **BatmanWL** (𝑩𝒂𝒕𝒎𝒂𝒏𝑾𝑳|Bot) is a feature-rich Telegram bot with a premium key system, allowing administrators to grant time-limited access to exclusive features.
 
 ## ✨ Features
@@ -166,17 +175,31 @@ Keys can be created with any duration in hours:
 
 ```
 telegrambot/
-├── bot.py                    # Main bot file
+├── bot.py                    # Main bot file (396 lines)
 ├── config.py                 # Configuration management
-├── database.py              # Database models and functions
-├── features.py              # Premium and free features
+├── database.py              # Database models and functions (190 lines)
+├── features.py              # Premium and free features (98 lines)
+├── test_bot.py              # Test suite (152 lines)
 ├── requirements.txt         # Python dependencies
-├── setup.sh                 # Quick setup script
-├── install_dependencies.sh  # Dependency installation script
+├── setup.sh                 # Quick setup script ⚡
+├── install_dependencies.sh  # Dependency installation script ⚡
 ├── .env.example            # Example environment file
 ├── .gitignore              # Git ignore rules
-└── README.md               # This file
+├── README.md               # This file (you are here!)
+├── QUICKSTART.md           # 5-minute setup guide 🚀
+├── EXAMPLES.md             # Sample bot interactions 📱
+├── ARCHITECTURE.md         # Technical architecture 🏗️
+├── CONTRIBUTING.md         # Contribution guidelines 🤝
+└── LICENSE                 # MIT License 📝
 ```
+
+## 📚 Documentation
+
+- **[README.md](README.md)** - Complete user guide and reference (this file)
+- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
+- **[EXAMPLES.md](EXAMPLES.md)** - See real bot interactions
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical design and architecture
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute to the project
 
 ## 🔒 Security
 
