@@ -4,10 +4,10 @@ Validates that callback query handlers work correctly
 """
 
 import sys
-from unittest.mock import Mock, AsyncMock, MagicMock
-from bot import BatmanWLBot
-from database import Database
 import os
+import asyncio
+from unittest.mock import Mock, AsyncMock
+from bot import BatmanWLBot
 
 
 def test_button_handler_stats():
@@ -64,7 +64,6 @@ DB_NAME = test_button_db.db
     update.callback_query = query
     
     # Test the button handler
-    import asyncio
     asyncio.run(bot.button_handler(update, context))
     
     # Verify query.answer() was called
@@ -144,7 +143,6 @@ DB_NAME = test_button_help_db.db
     
     update.callback_query = query
     
-    # Test the button handler
     import asyncio
     asyncio.run(bot.button_handler(update, context))
     
@@ -229,8 +227,6 @@ DB_NAME = test_all_buttons_db.db
     
     # Create test user
     bot.db.add_user(67890, "testuser", "Test", "User", "user")
-    
-    import asyncio
     
     # Test all button types
     button_tests = [
