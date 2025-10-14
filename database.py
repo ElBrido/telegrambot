@@ -111,6 +111,9 @@ def get_or_create_user(user_id, username=None, first_name=None):
                 user.first_name = first_name
             user.last_active = datetime.utcnow()
             session.commit()
+        session.refresh(user)
+        # Make user object independent of session
+        session.expunge(user)
         return user
     finally:
         Session.remove()
@@ -129,6 +132,8 @@ def generate_key(duration_hours, max_uses, created_by):
         )
         session.add(premium_key)
         session.commit()
+        session.refresh(premium_key)
+        session.expunge(premium_key)
         return premium_key
     finally:
         Session.remove()
@@ -160,6 +165,8 @@ def redeem_key(user_id, key_str):
         
         if key.redeem(user):
             session.commit()
+            session.refresh(user)
+            session.expunge(user)
             return user, "Key redeemed successfully"
         else:
             return None, "Failed to redeem key"
