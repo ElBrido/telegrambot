@@ -622,7 +622,22 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
                 parse_mode='Markdown'
             )
         elif query.data == 'stats':
-            await self.stats_command(update, context)
+            user = self.db.get_user(user_id)
+            stats = self.db.get_user_stats(user_id)
+            has_premium = self.db.has_premium(user_id)
+            
+            response = f"""
+📊 **Tus Estadísticas**
+
+👤 Usuario: @{query.from_user.username or query.from_user.first_name}
+🆔 ID: {user_id}
+🎭 Rol: {user['role']}
+⭐ Premium: {'✅ Activo' if has_premium else '❌ Inactivo'}
+
+📈 Verificaciones: {stats['total_checks']}
+            """
+            
+            await query.message.reply_text(response, parse_mode='Markdown')
         elif query.data == 'admin_panel':
             if not self.db.is_admin(user_id):
                 await query.message.reply_text("❌ No tienes permiso")
@@ -642,7 +657,71 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
                     parse_mode='Markdown'
                 )
         elif query.data == 'help':
-            await self.help_command(update, context)
+            is_admin = self.db.is_admin(user_id)
+            
+            help_text = """
+🦇 **BatmanWL - Ayuda** 🦇
+
+**Comandos disponibles:**
+
+**Comandos básicos:**
+• `/start` - Iniciar bot y ver menú
+• `/menu` o `.menu` - Mostrar menú principal
+• `/help` o `.help` - Mostrar esta ayuda
+
+**Verificación de Tarjetas:**
+• `/ccn <tarjeta>` o `.chk <tarjeta>` - Verificar tarjeta
+  Ejemplos:
+  `/ccn 4532015112830366`
+  `/ccn 4532015112830366|12|28|123`
+  `.chk 4532015112830366|12|25|123`
+
+• `/ch <tarjeta>` o `.ch <tarjeta>` - Prueba de cargo (Premium/Admin)
+  Ejemplo: `/ch 4532015112830366|12|25|123`
+
+• `/vbv <tarjeta>` o `.vbv <tarjeta>` - Verificar VBV/3D Secure (Premium/Admin)
+  Ejemplo: `/vbv 4532015112830366|12|25|123`
+
+• `/cardstatus <tarjeta>` o `.cardstatus <tarjeta>` - Estado activo/inactivo (Premium/Admin)
+  Ejemplo: `/cardstatus 4532015112830366|12|25|123`
+  
+• `/bin <bin>` o `.bin <bin>` - Buscar información BIN
+  Ejemplos:
+  `/bin 453201`
+  `.bin 453201|12|28`
+
+**Premium:**
+• `/gen <bin> [cant]` o `.gen <bin> [cant]` - Generar tarjetas (Premium)
+  Ejemplos:
+  `/gen 453201 10`
+  `.gen 453201|12|28 10`
+  `.mass 453201` - Genera 10 tarjetas
+  
+• `/key <clave>` - Activar clave premium
+• `/stats` - Ver tus estadísticas
+"""
+
+            if is_admin:
+                help_text += """
+**Comandos de Administración:**
+• `/genkey [cantidad]` - Generar claves premium
+• `/ban <user_id>` - Banear usuario
+• `/unban <user_id>` - Desbanear usuario
+• `/addcredits <user_id> <cantidad>` - Agregar créditos
+• `/broadcast <mensaje>` - Enviar mensaje a todos
+• `/statsadmin` - Ver estadísticas globales
+"""
+
+            help_text += """
+💡 **Formato profesional:**
+Usa el formato `tarjeta|mes|año|cvv` para inputs completos
+Ejemplo: `4532015112830366|04|31|123`
+
+💡 **Tip:** Puedes usar `/` o `.` o `..` antes de cualquier comando
+Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
+            """
+            
+            await query.message.reply_text(help_text, parse_mode='Markdown')
 
     # Admin panel commands
     async def ban_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
