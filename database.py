@@ -97,15 +97,24 @@ class Database:
         cursor = conn.cursor()
         
         # Check if user exists
-        cursor.execute("SELECT user_id FROM users WHERE user_id = ?", (user_id,))
-        exists = cursor.fetchone()
+        cursor.execute("SELECT user_id, role FROM users WHERE user_id = ?", (user_id,))
+        existing = cursor.fetchone()
         
-        if exists:
-            # Update existing user
+        if existing:
+            # Update existing user, preserve role if it's admin/owner unless explicitly changed
+            existing_role = existing['role']
+            # Only update role if new role is higher privilege (owner > admin > user)
+            role_hierarchy = {'owner': 3, 'admin': 2, 'user': 1}
+            new_role_level = role_hierarchy.get(role, 1)
+            existing_role_level = role_hierarchy.get(existing_role, 1)
+            
+            # Keep the higher privilege role
+            final_role = role if new_role_level >= existing_role_level else existing_role
+            
             cursor.execute("""
-                UPDATE users SET username = ?, first_name = ?, last_name = ?, last_seen = datetime('now')
+                UPDATE users SET username = ?, first_name = ?, last_name = ?, role = ?, last_seen = datetime('now')
                 WHERE user_id = ?
-            """, (username, first_name, last_name, user_id))
+            """, (username, first_name, last_name, final_role, user_id))
         else:
             # Insert new user with default credits
             cursor.execute("""
