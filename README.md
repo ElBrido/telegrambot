@@ -229,7 +229,7 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
 
 ## 📝 License
 
-This project is open source and available for personal and commercial use.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👨‍💻 Author
 
