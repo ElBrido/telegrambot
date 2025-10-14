@@ -172,6 +172,163 @@ Estado: {result['status']}
         
         await update.message.reply_text(response, parse_mode='Markdown')
 
+    async def charge_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /ch or ..ch command - Charge test verification"""
+        user_id = update.effective_user.id
+        
+        if not (self.db.is_admin(user_id) or self.db.has_premium(user_id)):
+            await update.message.reply_text("❌ Este comando requiere Premium o Admin")
+            return
+        
+        if not context.args:
+            await update.message.reply_text(
+                "❌ Uso: /ch <tarjeta>|<mm>|<aa>|<cvv>\n"
+                "Ejemplo: /ch 4532015112830366|12|25|123"
+            )
+            return
+        
+        input_str = ''.join(context.args)
+        processing_msg = await update.message.reply_text("🔄 Probando cargo...")
+        
+        try:
+            parsed = self.card_utils.parse_card_input(input_str)
+            card_number = parsed['card']
+            
+            if not card_number:
+                await processing_msg.edit_text("❌ Número de tarjeta inválido")
+                return
+            
+            result = self.card_utils.check_card_status(card_number)
+            
+            # Simulate charge test
+            import random
+            charge_status = "APPROVED" if result['is_valid'] and random.random() > 0.3 else "DECLINED"
+            
+            expiry = self.card_utils.format_expiry(parsed['month'], parsed['year']) if parsed['month'] else "N/A"
+            
+            response = f"""
+💳 **PRUEBA DE CARGO**
+
+💳 Tarjeta: `{result['card']}`
+🏦 Tipo: {result.get('type', 'N/A')}
+📅 Exp: {expiry}
+🔐 CVV: {parsed['cvv'] or 'N/A'}
+
+💰 Monto de prueba: $1.00
+Resultado: {'✅ ' + charge_status if charge_status == 'APPROVED' else '❌ ' + charge_status}
+Respuesta: {'Aprobado - CVV Match' if charge_status == 'APPROVED' else 'Fondos Insuficientes'}
+
+⚠️ **Nota:** Esta es una prueba simulada. El cargo real requiere integración con pasarela de pagos.
+            """
+            
+            await processing_msg.edit_text(response, parse_mode='Markdown')
+            
+        except Exception as e:
+            await processing_msg.edit_text(f"❌ Error: {str(e)}")
+
+    async def vbv_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /vbv or ..vbv command - VBV/3D Secure verification"""
+        user_id = update.effective_user.id
+        
+        if not (self.db.is_admin(user_id) or self.db.has_premium(user_id)):
+            await update.message.reply_text("❌ Este comando requiere Premium o Admin")
+            return
+        
+        if not context.args:
+            await update.message.reply_text(
+                "❌ Uso: /vbv <tarjeta>|<mm>|<aa>|<cvv>\n"
+                "Ejemplo: /vbv 4532015112830366|12|25|123"
+            )
+            return
+        
+        input_str = ''.join(context.args)
+        processing_msg = await update.message.reply_text("🔄 Verificando VBV...")
+        
+        try:
+            parsed = self.card_utils.parse_card_input(input_str)
+            card_number = parsed['card']
+            
+            if not card_number:
+                await processing_msg.edit_text("❌ Número de tarjeta inválido")
+                return
+            
+            result = self.card_utils.check_card_status(card_number)
+            
+            # Simulate VBV check
+            import random
+            vbv_enabled = random.choice([True, False]) if result['is_valid'] else False
+            
+            response = f"""
+🔐 **VERIFICADOR VBV**
+
+💳 Tarjeta: `{result['card']}`
+🏦 Tipo: {result.get('type', 'N/A')}
+
+Estado VBV: {'✅ HABILITADO' if vbv_enabled else '❌ DESHABILITADO'}
+3D Secure: {'✅ Activo' if vbv_enabled else '❌ Inactivo'}
+
+Nivel de Seguridad: {'🔒 Alto' if vbv_enabled else '🔓 Bajo'}
+
+⚠️ **Nota:** Esta es una verificación simulada. La verificación VBV real requiere integración con 3D Secure.
+            """
+            
+            await processing_msg.edit_text(response, parse_mode='Markdown')
+            
+        except Exception as e:
+            await processing_msg.edit_text(f"❌ Error: {str(e)}")
+
+    async def card_status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /cardstatus or ..cardstatus command - Check if card is active"""
+        user_id = update.effective_user.id
+        
+        if not (self.db.is_admin(user_id) or self.db.has_premium(user_id)):
+            await update.message.reply_text("❌ Este comando requiere Premium o Admin")
+            return
+        
+        if not context.args:
+            await update.message.reply_text(
+                "❌ Uso: /cardstatus <tarjeta>|<mm>|<aa>|<cvv>\n"
+                "Ejemplo: /cardstatus 4532015112830366|12|25|123"
+            )
+            return
+        
+        input_str = ''.join(context.args)
+        processing_msg = await update.message.reply_text("🔄 Verificando estado...")
+        
+        try:
+            parsed = self.card_utils.parse_card_input(input_str)
+            card_number = parsed['card']
+            
+            if not card_number:
+                await processing_msg.edit_text("❌ Número de tarjeta inválido")
+                return
+            
+            result = self.card_utils.check_card_status(card_number)
+            expiry = self.card_utils.format_expiry(parsed['month'], parsed['year']) if parsed['month'] else "N/A"
+            
+            # Simulate active/inactive status
+            import random
+            is_active = random.choice([True, False]) if result['is_valid'] else False
+            
+            response = f"""
+📊 **ESTADO DE TARJETA**
+
+💳 Tarjeta: `{result['card']}`
+🏦 Tipo: {result.get('type', 'N/A')}
+📅 Exp: {expiry}
+
+Validación: {'✅ Formato Válido' if result['is_valid'] else '❌ Formato Inválido'}
+Estado: {'🟢 ACTIVA' if is_active else '🔴 INACTIVA'}
+Saldo: {'Disponible' if is_active else 'No Disponible'}
+
+⚠️ **Nota:** Esta es una verificación simulada. El estado real requiere integración con API del emisor.
+            """
+            
+            await processing_msg.edit_text(response, parse_mode='Markdown')
+            
+        except Exception as e:
+            await processing_msg.edit_text(f"❌ Error: {str(e)}")
+
     async def bin_lookup_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /bin or ..bin command"""
         if not context.args:
@@ -368,6 +525,15 @@ Duración: {self.key_duration} días
   `/ccn 4532015112830366`
   `/ccn 4532015112830366|12|28|123`
   `.chk 4532015112830366|12|25|123`
+
+• `/ch <tarjeta>` o `.ch <tarjeta>` - Prueba de cargo (Premium/Admin)
+  Ejemplo: `/ch 4532015112830366|12|25|123`
+
+• `/vbv <tarjeta>` o `.vbv <tarjeta>` - Verificar VBV/3D Secure (Premium/Admin)
+  Ejemplo: `/vbv 4532015112830366|12|25|123`
+
+• `/cardstatus <tarjeta>` o `.cardstatus <tarjeta>` - Estado activo/inactivo (Premium/Admin)
+  Ejemplo: `/cardstatus 4532015112830366|12|25|123`
   
 • `/bin <bin>` o `.bin <bin>` - Buscar información BIN
   Ejemplos:
@@ -611,6 +777,15 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
         elif command == 'ccn' or command == 'chk':
             context.args = args
             await self.ccn_check_command(update, context)
+        elif command == 'ch':
+            context.args = args
+            await self.charge_command(update, context)
+        elif command == 'vbv':
+            context.args = args
+            await self.vbv_command(update, context)
+        elif command == 'cardstatus':
+            context.args = args
+            await self.card_status_command(update, context)
         elif command == 'bin':
             context.args = args
             await self.bin_lookup_command(update, context)
@@ -639,6 +814,9 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
         application.add_handler(CommandHandler("menu", self.menu))
         application.add_handler(CommandHandler("ccn", self.ccn_check_command))
         application.add_handler(CommandHandler("chk", self.ccn_check_command))  # Alias
+        application.add_handler(CommandHandler("ch", self.charge_command))  # Charge test
+        application.add_handler(CommandHandler("vbv", self.vbv_command))  # VBV checker
+        application.add_handler(CommandHandler("cardstatus", self.card_status_command))  # Card status
         application.add_handler(CommandHandler("bin", self.bin_lookup_command))
         application.add_handler(CommandHandler("gen", self.generate_cards_command))
         application.add_handler(CommandHandler("key", self.activate_key_command))

@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  telegram-bot:
+    build: .
+    container_name: batmanwl-telegram-bot
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./config.ini:/app/config.ini:ro
+    environment:
+      - TZ=UTC
