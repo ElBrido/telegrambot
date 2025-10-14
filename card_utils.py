@@ -140,8 +140,14 @@ class CardUtils:
             return {
                 "status": "INVALID",
                 "message": "❌ Tarjeta inválida (no pasa validación Luhn)",
-                "card": card_number
+                "card": card_number,
+                "is_valid": False,
+                "type": "UNKNOWN"
             }
+        
+        # Get card type from BIN
+        first_digit = card_number[0] if card_number else ""
+        card_type = CardUtils.BIN_DATABASE.get(first_digit, {}).get("type", "UNKNOWN")
         
         # Simulate random status for demonstration
         statuses = [
@@ -152,6 +158,8 @@ class CardUtils:
         
         result = random.choice(statuses)
         result["card"] = CardUtils.format_card_number(card_number)
+        result["is_valid"] = True
+        result["type"] = card_type
         
         return result
     
