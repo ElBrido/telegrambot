@@ -28,17 +28,22 @@ class Database:
         conn = self.get_connection()
         cursor = conn.cursor()
 
-        # Users table
+        # Users table with enhanced fields
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
                 username TEXT,
+                first_name TEXT,
+                last_name TEXT,
                 role TEXT DEFAULT 'user',
-                registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                is_banned INTEGER DEFAULT 0,
+                credits INTEGER DEFAULT 0,
+                registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
-        # Premium keys table
+        # Premium keys table with max uses support
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS premium_keys (
                 key_code TEXT PRIMARY KEY,
@@ -47,7 +52,12 @@ class Database:
                 activated_at TIMESTAMP,
                 expires_at TIMESTAMP,
                 is_active INTEGER DEFAULT 0,
-                FOREIGN KEY (user_id) REFERENCES users(user_id)
+                duration_hours INTEGER DEFAULT 720,
+                max_uses INTEGER DEFAULT 1,
+                current_uses INTEGER DEFAULT 0,
+                created_by INTEGER,
+                FOREIGN KEY (user_id) REFERENCES users(user_id),
+                FOREIGN KEY (created_by) REFERENCES users(user_id)
             )
         """)
 
@@ -62,20 +72,46 @@ class Database:
                 FOREIGN KEY (user_id) REFERENCES users(user_id)
             )
         """)
+        
+        # Admin logs table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS admin_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                admin_id INTEGER,
+                action TEXT,
+                target_user_id INTEGER,
+                details TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (admin_id) REFERENCES users(user_id),
+                FOREIGN KEY (target_user_id) REFERENCES users(user_id)
+            )
+        """)
 
         conn.commit()
         conn.close()
         logger.info("Database initialized successfully")
 
-    def add_user(self, user_id: int, username: str = None, role: str = "user"):
+    def add_user(self, user_id: int, username: str = None, first_name: str = None, last_name: str = None, role: str = "user"):
         """Add or update user in database"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        cursor.execute("""
-            INSERT OR REPLACE INTO users (user_id, username, role)
-            VALUES (?, ?, ?)
-        """, (user_id, username, role))
+        # Check if user exists
+        cursor.execute("SELECT user_id FROM users WHERE user_id = ?", (user_id,))
+        exists = cursor.fetchone()
+        
+        if exists:
+            # Update existing user
+            cursor.execute("""
+                UPDATE users SET username = ?, first_name = ?, last_name = ?, last_seen = datetime('now')
+                WHERE user_id = ?
+            """, (username, first_name, last_name, user_id))
+        else:
+            # Insert new user with default credits
+            cursor.execute("""
+                INSERT INTO users (user_id, username, first_name, last_name, role, credits)
+                VALUES (?, ?, ?, ?, ?, 10)
+            """, (user_id, username, first_name, last_name, role))
         
         conn.commit()
         conn.close()
@@ -203,3 +239,115 @@ class Database:
         conn.close()
         
         return {'total_checks': result['total_checks'] if result else 0}
+    
+    # Enhanced admin features
+    def ban_user(self, user_id: int, admin_id: int):
+        """Ban a user"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE users SET is_banned = 1 WHERE user_id = ?
+        """, (user_id,))
+        
+        # Log action
+        cursor.execute("""
+            INSERT INTO admin_logs (admin_id, action, target_user_id, details)
+            VALUES (?, 'BAN', ?, 'User banned')
+        """, (admin_id, user_id))
+        
+        conn.commit()
+        conn.close()
+    
+    def unban_user(self, user_id: int, admin_id: int):
+        """Unban a user"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE users SET is_banned = 0 WHERE user_id = ?
+        """, (user_id,))
+        
+        # Log action
+        cursor.execute("""
+            INSERT INTO admin_logs (admin_id, action, target_user_id, details)
+            VALUES (?, 'UNBAN', ?, 'User unbanned')
+        """, (admin_id, user_id))
+        
+        conn.commit()
+        conn.close()
+    
+    def add_credits(self, user_id: int, credits: int, admin_id: int):
+        """Add credits to user"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE users SET credits = credits + ? WHERE user_id = ?
+        """, (credits, user_id))
+        
+        # Log action
+        cursor.execute("""
+            INSERT INTO admin_logs (admin_id, action, target_user_id, details)
+            VALUES (?, 'ADD_CREDITS', ?, ?)
+        """, (admin_id, user_id, f"Added {credits} credits"))
+        
+        conn.commit()
+        conn.close()
+    
+    def use_credit(self, user_id: int):
+        """Use one credit"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE users SET credits = MAX(0, credits - 1) WHERE user_id = ?
+        """, (user_id,))
+        
+        conn.commit()
+        conn.close()
+    
+    def update_last_seen(self, user_id: int):
+        """Update user's last seen timestamp"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE users SET last_seen = datetime('now') WHERE user_id = ?
+        """, (user_id,))
+        
+        conn.commit()
+        conn.close()
+    
+    def get_stats(self) -> dict:
+        """Get global statistics"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT COUNT(*) as total_users FROM users")
+        total_users = cursor.fetchone()['total_users']
+        
+        cursor.execute("SELECT COUNT(*) as total_checks FROM card_checks")
+        total_checks = cursor.fetchone()['total_checks']
+        
+        cursor.execute("SELECT COUNT(*) as banned_users FROM users WHERE is_banned = 1")
+        banned_users = cursor.fetchone()['banned_users']
+        
+        conn.close()
+        
+        return {
+            'total_users': total_users,
+            'total_checks': total_checks,
+            'banned_users': banned_users
+        }
+    
+    def get_all_users_count(self) -> int:
+        """Get total number of users"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT COUNT(*) as count FROM users")
+        result = cursor.fetchone()
+        conn.close()
+        
+        return result['count'] if result else 0
