@@ -96,15 +96,24 @@ def get_card_brand(card_number: str) -> str:
     """Identify card brand from card number"""
     card_number = re.sub(r'\D', '', card_number)
     
+    if len(card_number) < 3:
+        return 'UNKNOWN'
+    
     if card_number.startswith('4'):
         return 'VISA'
-    elif card_number.startswith(('51', '52', '53', '54', '55')) or (2221 <= int(card_number[:4]) <= 2720):
+    elif card_number.startswith(('51', '52', '53', '54', '55')):
+        return 'MASTERCARD'
+    elif len(card_number) >= 4 and (2221 <= int(card_number[:4]) <= 2720):
         return 'MASTERCARD'
     elif card_number.startswith(('34', '37')):
         return 'AMEX'
-    elif card_number.startswith(('6011', '65')) or (644 <= int(card_number[:3]) <= 649):
+    elif card_number.startswith(('6011', '65')):
         return 'DISCOVER'
-    elif card_number.startswith(('3528', '3589')) or (3528 <= int(card_number[:4]) <= 3589):
+    elif len(card_number) >= 3 and (644 <= int(card_number[:3]) <= 649):
+        return 'DISCOVER'
+    elif len(card_number) >= 4 and card_number.startswith(('3528', '3589')):
+        return 'JCB'
+    elif len(card_number) >= 4 and (3528 <= int(card_number[:4]) <= 3589):
         return 'JCB'
     else:
         return 'UNKNOWN'
@@ -125,17 +134,15 @@ def generate_card(bin_number: str, quantity: int = 1) -> List[str]:
         # Calculate Luhn check digit
         def calculate_luhn_digit(card_num):
             """Calculate the Luhn check digit for a card number"""
-            def digits_of(n):
-                return [int(d) for d in str(n)]
-            
-            digits = digits_of(card_num)
-            # Double every second digit from right to left (excluding the check digit position)
+            digits = [int(d) for d in card_num]
+            # Double every second digit from right to left (starting from the second-to-last position)
+            # Since we're adding a check digit at the end, we double positions 0, 2, 4, etc. from the right
             for i in range(len(digits) - 1, -1, -2):
                 digits[i] *= 2
                 if digits[i] > 9:
                     digits[i] -= 9
             
-            # Calculate check digit
+            # Calculate check digit to make total divisible by 10
             total = sum(digits)
             check_digit = (10 - (total % 10)) % 10
             return str(check_digit)
