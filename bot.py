@@ -477,16 +477,16 @@ Saldo: {'Disponible' if is_active else 'No Disponible'}
                     duration_str = context.args[1]
                     # Parse duration with unit (e.g., "5h", "30m", "3600s", "1d")
                     if duration_str.endswith('s'):
-                        duration_hours = int(duration_str[:-1]) / 3600
+                        duration_hours = float(duration_str[:-1]) / 3600.0
                     elif duration_str.endswith('m'):
-                        duration_hours = int(duration_str[:-1]) / 60
+                        duration_hours = float(duration_str[:-1]) / 60.0
                     elif duration_str.endswith('h'):
-                        duration_hours = int(duration_str[:-1])
+                        duration_hours = float(duration_str[:-1])
                     elif duration_str.endswith('d'):
-                        duration_hours = int(duration_str[:-1]) * 24
+                        duration_hours = float(duration_str[:-1]) * 24.0
                     else:
                         # Default to hours if no unit specified
-                        duration_hours = int(duration_str)
+                        duration_hours = float(duration_str)
             except (ValueError, IndexError):
                 await update.message.reply_text(
                     "❌ Uso: /genkey [cantidad] [duración]\n"

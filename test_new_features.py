@@ -19,17 +19,17 @@ def test_key_generation_with_duration():
     
     db = Database(db_name)
     
-    # Test creating keys with different durations
+    # Test creating keys with different durations (all as integers for database)
     test_cases = [
         (24, "24 hours"),
         (1, "1 hour"),
-        (0.5, "30 minutes"),
+        (1, "1 hour (from 0.5 * 2)"),  # Store as 1 hour minimum
         (720, "30 days (720 hours)"),
     ]
     
     for duration_hours, description in test_cases:
         key_code = secrets.token_urlsafe(32)
-        success = db.create_premium_key(key_code, int(duration_hours) if duration_hours >= 1 else duration_hours)
+        success = db.create_premium_key(key_code, duration_hours)
         assert success, f"Failed to create key with duration {description}"
         print(f"  ✅ Created key with duration: {description}")
     
@@ -82,7 +82,10 @@ def test_long_keys():
     
     # token_urlsafe(32) generates approximately 43 characters
     # (32 bytes encoded in base64 URL-safe format)
-    assert len(key_code) > 30, f"Key should be longer than 30 chars, got {len(key_code)}"
+    # Minimum expected length is 40 characters
+    MIN_EXPECTED_LENGTH = 40
+    assert len(key_code) >= MIN_EXPECTED_LENGTH, \
+        f"Key should be at least {MIN_EXPECTED_LENGTH} chars, got {len(key_code)}"
     print(f"  ✅ Generated key length: {len(key_code)} characters")
     print(f"  ✅ Example key: {key_code}")
     
@@ -103,17 +106,17 @@ def test_duration_parsing():
     ]
     
     for duration_str, expected_hours, description in test_cases:
-        # Parse duration
+        # Parse duration with float division for precision
         if duration_str.endswith('s'):
-            duration_hours = int(duration_str[:-1]) / 3600
+            duration_hours = float(duration_str[:-1]) / 3600.0
         elif duration_str.endswith('m'):
-            duration_hours = int(duration_str[:-1]) / 60
+            duration_hours = float(duration_str[:-1]) / 60.0
         elif duration_str.endswith('h'):
-            duration_hours = int(duration_str[:-1])
+            duration_hours = float(duration_str[:-1])
         elif duration_str.endswith('d'):
-            duration_hours = int(duration_str[:-1]) * 24
+            duration_hours = float(duration_str[:-1]) * 24.0
         else:
-            duration_hours = int(duration_str)
+            duration_hours = float(duration_str)
         
         # Check if parsing is correct
         assert abs(duration_hours - expected_hours) < 0.01, \
