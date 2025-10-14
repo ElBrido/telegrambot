@@ -1,0 +1,6 @@
+{
+  "bot_token": "YOUR_BOT_TOKEN_HERE",
+  "welcome_gif_url": "https://example.com/your-welcome-gif.gif",
+  "owners": [123456789],
+  "admins": []
+}
