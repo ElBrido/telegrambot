@@ -31,6 +31,7 @@ wheels/
 # Config
 config.ini
 .env
+test_config.ini
 
 # IDE
 .vscode/
