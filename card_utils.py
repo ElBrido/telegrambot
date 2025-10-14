@@ -146,7 +146,7 @@ class CardUtils:
             }
         
         # Get card type from BIN
-        first_digit = card_number[0] if card_number else ""
+        first_digit = card_number[0]
         card_type = CardUtils.BIN_DATABASE.get(first_digit, {}).get("type", "UNKNOWN")
         
         # Simulate random status for demonstration
