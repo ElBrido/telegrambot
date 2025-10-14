@@ -178,14 +178,14 @@ Para obtener tu ID de Telegram, puedes usar [@userinfobot](https://t.me/userinfo
 | Comando | Alternativa | Descripción | Ejemplo |
 |---------|-------------|-------------|---------|
 | `/gen <bin> [cant]` | `..gen <bin> [cant]` | Genera tarjetas (Premium) | `/gen 453201 10` |
-| `/key <clave>` | `..key <clave>` | Activa clave premium | `/key ABC123XYZ` |
+| `/redeem <clave>` | `..redeem <clave>` | Activa clave premium | `/redeem ABC123XYZ` |
 | `/stats` | `..stats` | Muestra tus estadísticas | `/stats` |
 
 ### Comandos de Administración
 
 | Comando | Descripción | Ejemplo |
 |---------|-------------|---------|
-| `/genkey [cant]` | Genera claves premium (Admin) | `/genkey 5` |
+| `/genkey [cant] [duración]` | Genera claves premium (Admin) | `/genkey 5 24h` |
 
 ## 🔐 Sistema Premium
 
@@ -198,14 +198,23 @@ El sistema premium permite acceso a funciones avanzadas:
 ### Activar Premium
 
 1. Obtén una clave premium de un administrador
-2. Usa el comando: `/key TU_CLAVE_AQUI`
-3. La clave se activará por el período configurado (default: 30 días)
+2. Usa el comando: `/redeem TU_CLAVE_AQUI`
+3. La clave se activará por el período configurado
 
 ### Generar Claves (Solo Admin)
 
 ```bash
-/genkey 5  # Genera 5 claves premium
+/genkey 5 24h   # Genera 5 claves de 24 horas
+/genkey 3 30m   # Genera 3 claves de 30 minutos
+/genkey 10 7d   # Genera 10 claves de 7 días
+/genkey 2 3600s # Genera 2 claves de 3600 segundos
 ```
+
+**Unidades de tiempo soportadas:**
+- `s` - Segundos
+- `m` - Minutos
+- `h` - Horas
+- `d` - Días
 
 ## 📊 Base de Datos
 
