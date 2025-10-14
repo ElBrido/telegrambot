@@ -78,7 +78,7 @@ class BatmanWLBot:
         user = update.effective_user
         
         # Register user
-        self.db.add_user(user.id, user.username)
+        self.db.add_user(user.id, user.username, user.first_name, user.last_name)
         
         welcome_text = f"""
 {self.welcome_msg}
@@ -349,6 +349,9 @@ Duración: {self.key_duration} días
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /help or ..help command"""
+        user_id = update.effective_user.id
+        is_admin = self.db.is_admin(user_id)
+        
         help_text = """
 🦇 **BatmanWL - Ayuda** 🦇
 
@@ -356,37 +359,50 @@ Duración: {self.key_duration} días
 
 **Comandos básicos:**
 • `/start` - Iniciar bot y ver menú
-• `/menu` o `..menu` - Mostrar menú principal
-• `/help` o `..help` - Mostrar esta ayuda
+• `/menu` o `.menu` - Mostrar menú principal
+• `/help` o `.help` - Mostrar esta ayuda
 
-**Verificación:**
-• `/ccn <tarjeta>` - Verificar tarjeta
+**Verificación de Tarjetas:**
+• `/ccn <tarjeta>` o `.chk <tarjeta>` - Verificar tarjeta
   Ejemplos:
   `/ccn 4532015112830366`
   `/ccn 4532015112830366|12|28|123`
+  `.chk 4532015112830366|12|25|123`
   
-• `/bin <bin>` - Buscar información BIN
+• `/bin <bin>` o `.bin <bin>` - Buscar información BIN
   Ejemplos:
   `/bin 453201`
-  `/bin 453201|12|28`
+  `.bin 453201|12|28`
 
 **Premium:**
-• `/gen <bin> [cant]` - Generar tarjetas (Premium)
+• `/gen <bin> [cant]` o `.gen <bin> [cant]` - Generar tarjetas (Premium)
   Ejemplos:
   `/gen 453201 10`
-  `/gen 453201|12|28 10`
+  `.gen 453201|12|28 10`
+  `.mass 453201` - Genera 10 tarjetas
   
 • `/key <clave>` - Activar clave premium
 • `/stats` - Ver tus estadísticas
+"""
 
-**Admin:**
-• `/genkey [cant]` - Generar claves premium
+        if is_admin:
+            help_text += """
+**Comandos de Administración:**
+• `/genkey [cantidad]` - Generar claves premium
+• `/ban <user_id>` - Banear usuario
+• `/unban <user_id>` - Desbanear usuario
+• `/addcredits <user_id> <cantidad>` - Agregar créditos
+• `/broadcast <mensaje>` - Enviar mensaje a todos
+• `/statsadmin` - Ver estadísticas globales
+"""
 
+        help_text += """
 💡 **Formato profesional:**
 Usa el formato `tarjeta|mes|año|cvv` para inputs completos
 Ejemplo: `4532015112830366|04|31|123`
 
-💡 **Tip:** Puedes usar `/` o `..` antes de cualquier comando
+💡 **Tip:** Puedes usar `/` o `.` o `..` antes de cualquier comando
+Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
         """
         
         await update.message.reply_text(help_text, parse_mode='Markdown')
@@ -446,69 +462,203 @@ Ejemplo: `4532015112830366|04|31|123`
                 await query.message.reply_text("❌ No tienes permiso")
             else:
                 await query.message.reply_text(
-                    "⚙️ **Panel de Administración**\n\n"
-                    "**Comandos disponibles:**\n"
-                    "• /genkey [cantidad] - Generar claves premium\n",
+                    "⚙️ **Panel de Administración Completo**\n\n"
+                    "**Gestión de Claves:**\n"
+                    "• /genkey [cantidad] - Generar claves premium\n\n"
+                    "**Gestión de Usuarios:**\n"
+                    "• /ban <user_id> - Banear usuario\n"
+                    "• /unban <user_id> - Desbanear usuario\n"
+                    "• /addcredits <user_id> <cantidad> - Agregar créditos\n\n"
+                    "**Comunicación:**\n"
+                    "• /broadcast <mensaje> - Mensaje a todos los usuarios\n\n"
+                    "**Estadísticas:**\n"
+                    "• /statsadmin - Ver estadísticas globales\n",
                     parse_mode='Markdown'
                 )
         elif query.data == 'help':
             await self.help_command(update, context)
 
+    # Admin panel commands
+    async def ban_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /ban command (admin only)"""
+        user_id = update.effective_user.id
+        
+        if not self.db.is_admin(user_id):
+            await update.message.reply_text("❌ No tienes permiso para usar este comando")
+            return
+        
+        if not context.args:
+            await update.message.reply_text(
+                "❌ Uso: /ban <user_id>\n"
+                "Ejemplo: /ban 123456789"
+            )
+            return
+        
+        try:
+            target_user_id = int(context.args[0])
+            self.db.ban_user(target_user_id, user_id)
+            await update.message.reply_text(f"✅ Usuario {target_user_id} baneado correctamente")
+        except ValueError:
+            await update.message.reply_text("❌ ID de usuario inválido")
+    
+    async def unban_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /unban command (admin only)"""
+        user_id = update.effective_user.id
+        
+        if not self.db.is_admin(user_id):
+            await update.message.reply_text("❌ No tienes permiso para usar este comando")
+            return
+        
+        if not context.args:
+            await update.message.reply_text(
+                "❌ Uso: /unban <user_id>\n"
+                "Ejemplo: /unban 123456789"
+            )
+            return
+        
+        try:
+            target_user_id = int(context.args[0])
+            self.db.unban_user(target_user_id, user_id)
+            await update.message.reply_text(f"✅ Usuario {target_user_id} desbaneado correctamente")
+        except ValueError:
+            await update.message.reply_text("❌ ID de usuario inválido")
+    
+    async def addcredits_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /addcredits command (admin only)"""
+        user_id = update.effective_user.id
+        
+        if not self.db.is_admin(user_id):
+            await update.message.reply_text("❌ No tienes permiso para usar este comando")
+            return
+        
+        if len(context.args) < 2:
+            await update.message.reply_text(
+                "❌ Uso: /addcredits <user_id> <cantidad>\n"
+                "Ejemplo: /addcredits 123456789 100"
+            )
+            return
+        
+        try:
+            target_user_id = int(context.args[0])
+            credits = int(context.args[1])
+            self.db.add_credits(target_user_id, credits, user_id)
+            await update.message.reply_text(
+                f"✅ Se agregaron {credits} créditos al usuario {target_user_id}"
+            )
+        except ValueError:
+            await update.message.reply_text("❌ Valores inválidos")
+    
+    async def broadcast_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /broadcast command (admin only)"""
+        user_id = update.effective_user.id
+        
+        if not self.db.is_admin(user_id):
+            await update.message.reply_text("❌ No tienes permiso para usar este comando")
+            return
+        
+        if not context.args:
+            await update.message.reply_text(
+                "❌ Uso: /broadcast <mensaje>\n"
+                "Ejemplo: /broadcast Hola a todos!"
+            )
+            return
+        
+        message = ' '.join(context.args)
+        await update.message.reply_text(
+            f"📢 **Mensaje de Broadcast**\n\n{message}\n\n"
+            "✅ Mensaje enviado a todos los usuarios (simulado)",
+            parse_mode='Markdown'
+        )
+    
+    async def stats_admin_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /statsadmin command (admin only)"""
+        user_id = update.effective_user.id
+        
+        if not self.db.is_admin(user_id):
+            await update.message.reply_text("❌ No tienes permiso para usar este comando")
+            return
+        
+        stats = self.db.get_stats()
+        
+        response = f"""
+📊 **Estadísticas Globales (Admin)**
+
+👥 Total Usuarios: {stats['total_users']}
+📈 Total Verificaciones: {stats['total_checks']}
+🚫 Usuarios Baneados: {stats['banned_users']}
+✅ Usuarios Activos: {stats['total_users'] - stats['banned_users']}
+        """
+        
+        await update.message.reply_text(response, parse_mode='Markdown')
+
     async def handle_dot_commands(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle commands starting with '..'"""
+        """Handle commands starting with '..' or '.'"""
         text = update.message.text
         
+        # Handle both .. and . prefixes
         if text.startswith('..'):
-            # Convert ..command to /command
             command = text[2:].split()[0]
             args = text.split()[1:]
-            
-            # Simulate command
-            if command == 'menu':
-                await self.menu(update, context)
-            elif command == 'ccn':
-                context.args = args
-                await self.ccn_check_command(update, context)
-            elif command == 'bin':
-                context.args = args
-                await self.bin_lookup_command(update, context)
-            elif command == 'gen':
-                context.args = args
-                await self.generate_cards_command(update, context)
-            elif command == 'key':
-                context.args = args
-                await self.activate_key_command(update, context)
-            elif command == 'stats':
-                await self.stats_command(update, context)
-            elif command == 'help':
-                await self.help_command(update, context)
-            else:
-                await update.message.reply_text(
-                    f"❌ Comando desconocido: {command}\n"
-                    "Usa /help para ver comandos disponibles"
-                )
+        elif text.startswith('.'):
+            command = text[1:].split()[0]
+            args = text.split()[1:]
+        else:
+            return
+        
+        # Simulate command
+        if command == 'menu':
+            await self.menu(update, context)
+        elif command == 'ccn' or command == 'chk':
+            context.args = args
+            await self.ccn_check_command(update, context)
+        elif command == 'bin':
+            context.args = args
+            await self.bin_lookup_command(update, context)
+        elif command == 'gen' or command == 'mass':
+            context.args = args
+            await self.generate_cards_command(update, context)
+        elif command == 'key':
+            context.args = args
+            await self.activate_key_command(update, context)
+        elif command == 'stats':
+            await self.stats_command(update, context)
+        elif command == 'help':
+            await self.help_command(update, context)
+        else:
+            await update.message.reply_text(
+                f"❌ Comando desconocido: {command}\n"
+                "Usa /help para ver comandos disponibles"
+            )
 
     def run(self):
         """Start the bot"""
         application = Application.builder().token(self.token).build()
         
-        # Add handlers
+        # Add basic command handlers
         application.add_handler(CommandHandler("start", self.start))
         application.add_handler(CommandHandler("menu", self.menu))
         application.add_handler(CommandHandler("ccn", self.ccn_check_command))
+        application.add_handler(CommandHandler("chk", self.ccn_check_command))  # Alias
         application.add_handler(CommandHandler("bin", self.bin_lookup_command))
         application.add_handler(CommandHandler("gen", self.generate_cards_command))
         application.add_handler(CommandHandler("key", self.activate_key_command))
-        application.add_handler(CommandHandler("genkey", self.genkey_command))
         application.add_handler(CommandHandler("stats", self.stats_command))
         application.add_handler(CommandHandler("help", self.help_command))
+        
+        # Admin command handlers
+        application.add_handler(CommandHandler("genkey", self.genkey_command))
+        application.add_handler(CommandHandler("ban", self.ban_command))
+        application.add_handler(CommandHandler("unban", self.unban_command))
+        application.add_handler(CommandHandler("addcredits", self.addcredits_command))
+        application.add_handler(CommandHandler("broadcast", self.broadcast_command))
+        application.add_handler(CommandHandler("statsadmin", self.stats_admin_command))
         
         # Button handler
         application.add_handler(CallbackQueryHandler(self.button_handler))
         
-        # Handle '..' commands
+        # Handle '.' and '..' commands
         application.add_handler(MessageHandler(
-            filters.TEXT & filters.Regex(r'^\.\.'),
+            filters.TEXT & filters.Regex(r'^\.'),
             self.handle_dot_commands
         ))
         
