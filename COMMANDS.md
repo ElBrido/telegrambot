@@ -166,17 +166,18 @@ Referencia completa de todos los comandos disponibles. Todos los comandos soport
 
 ## 🔑 Premium
 
-### /key
+### /redeem
 **Activar clave premium**
 
 **Uso:**
 ```
-/key <clave_premium>
-/key ABC123XYZ
+/redeem <clave_premium>
+/redeem ABC123XYZ
+..redeem ABC123XYZ
 ```
 
 **Características:**
-- Activa premium por 30 días (configurable)
+- Activa premium por la duración configurada en la clave
 - Desbloquea generación de tarjetas
 - Acceso a comandos premium
 
@@ -189,14 +190,24 @@ Referencia completa de todos los comandos disponibles. Todos los comandos soport
 
 **Uso:**
 ```
-/genkey [cantidad]
-/genkey 5
+/genkey [cantidad] [duración]
+/genkey 5 24h
+/genkey 3 30m
+/genkey 10 7d
+/genkey 2 3600s
 ```
 
 **Características:**
 - Genera hasta 20 claves
 - Solo para admins
-- Claves válidas por duración configurada
+- Claves con duración personalizable (s/m/h/d)
+- Claves más largas (32 caracteres) para mayor seguridad
+
+**Unidades de tiempo:**
+- `s` - Segundos
+- `m` - Minutos  
+- `h` - Horas
+- `d` - Días
 
 ---
 
@@ -315,7 +326,7 @@ Usa los botones del menú en `/start` para acceso rápido a comandos comunes.
 | Verificación | `/ccn` `/ch` `/vbv` `/cardstatus` `/bin` | Validación de tarjetas |
 | Generación | `/gen` | Generación de tarjetas (Premium) |
 | Usuario | `/start` `/menu` `/stats` `/help` | Gestión de cuenta |
-| Premium | `/key` | Sistema premium |
+| Premium | `/redeem` | Sistema premium |
 | Admin | `/genkey` `/ban` `/unban` `/addcredits` `/broadcast` `/statsadmin` | Administración |
 
 ---
@@ -347,6 +358,8 @@ Usa los botones del menú en `/start` para acceso rápido a comandos comunes.
 
 ### Operaciones Admin
 ```
+/genkey 5 24h
+/genkey 3 30m
 /ban 123456789
 /addcredits 123456789 100
 /broadcast ¡Nueva función disponible!

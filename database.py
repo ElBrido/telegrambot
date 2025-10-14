@@ -153,16 +153,16 @@ class Database:
         role = self.get_user_role(user_id)
         return role == 'owner'
 
-    def create_premium_key(self, key_code: str) -> bool:
-        """Create a new premium key"""
+    def create_premium_key(self, key_code: str, duration_hours: int = 720) -> bool:
+        """Create a new premium key with configurable duration"""
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
             
             cursor.execute("""
-                INSERT INTO premium_keys (key_code)
-                VALUES (?)
-            """, (key_code,))
+                INSERT INTO premium_keys (key_code, duration_hours)
+                VALUES (?, ?)
+            """, (key_code, duration_hours))
             
             conn.commit()
             conn.close()
@@ -170,7 +170,7 @@ class Database:
         except sqlite3.IntegrityError:
             return False
 
-    def activate_premium_key(self, user_id: int, key_code: str, duration_days: int = 30) -> Tuple[bool, str]:
+    def activate_premium_key(self, user_id: int, key_code: str) -> Tuple[bool, str]:
         """Activate premium key for user"""
         conn = self.get_connection()
         cursor = conn.cursor()
@@ -190,9 +190,10 @@ class Database:
             conn.close()
             return False, "❌ Esta clave ya ha sido utilizada"
         
-        # Activate key
+        # Activate key with duration from key itself
         now = datetime.now()
-        expires_at = now + timedelta(days=duration_days)
+        duration_hours = key['duration_hours'] if key['duration_hours'] else 720  # Default 30 days
+        expires_at = now + timedelta(hours=duration_hours)
         
         cursor.execute("""
             UPDATE premium_keys
