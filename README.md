@@ -89,11 +89,6 @@ python bot.py
 
 #### Pasarela de Pagos (Opcional)
 
-⚠️ **IMPORTANTE - PREVENCIÓN DE FRAUDE**: 
-- **Solo usa tarjetas de prueba de Stripe en modo TEST**
-- **NUNCA uses tarjetas reales en modo TEST**
-- **Lee [PAYMENT_GATEWAY_SETUP.md](PAYMENT_GATEWAY_SETUP.md)** para evitar alertas de fraude
-
 Para usar cargos reales y VBV real en lugar de simulaciones:
 
 1. **Edita `config.ini` sección `[PAYMENT_GATEWAY]`:**

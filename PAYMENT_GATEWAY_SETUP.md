@@ -219,61 +219,11 @@ TEST_MODE = true
    - Configura alertas en tu pasarela de pago
    - Verifica logs del bot
 
-## ⚠️ PREVENCIÓN DE ALERTAS DE FRAUDE
-
-**MUY IMPORTANTE**: Para evitar alertas de fraude y posible cierre de cuenta:
-
-### 🔴 NUNCA hagas esto:
-
-1. ❌ **NO uses tarjetas reales en modo TEST**
-   - Stripe detectará patrones sospechosos
-   - Puede resultar en alertas de fraude
-   - Riesgo de cierre de cuenta
-
-2. ❌ **NO mezcles tarjetas de prueba y reales**
-   - Mantén separados los entornos
-   - TEST_MODE = true → Solo tarjetas de prueba
-   - TEST_MODE = false → Solo tarjetas reales
-
-3. ❌ **NO hagas cargos repetidos a la misma tarjeta**
-   - Stripe monitorea patrones de prueba
-   - Limita tus pruebas de desarrollo
-
-### ✅ SIEMPRE haz esto:
-
-1. ✅ **Usa tarjetas de prueba de Stripe en modo TEST**
-   ```
-   Tarjeta de prueba: 4242 4242 4242 4242
-   CVV: cualquier 3 dígitos
-   Fecha: cualquier fecha futura
-   ```
-
-2. ✅ **Configura correctamente TEST_MODE**
-   - `TEST_MODE = true` → claves `sk_test_...`
-   - `TEST_MODE = false` → claves `sk_live_...`
-
-3. ✅ **Verifica el modo antes de usar**
-   - El bot muestra "(Modo Test)" o "(Modo Producción)"
-   - Revisa los logs al iniciar el bot
-
-4. ✅ **Lee la documentación de Stripe**
-   - [Testing Cards](https://stripe.com/docs/testing)
-   - [Best Practices](https://stripe.com/docs/security/best-practices)
-
-### 📧 Si recibes un email de alerta:
-
-1. **Detén inmediatamente las pruebas**
-2. **Verifica tu configuración:**
-   - ¿Estás en TEST_MODE = true?
-   - ¿Usas solo tarjetas de prueba?
-   - ¿Tienes las claves correctas (sk_test vs sk_live)?
-3. **Limpia cualquier dato de tarjetas reales**
-4. **Responde al email explicando:**
-   - Estás desarrollando/probando un bot
-   - Solo usarás tarjetas de prueba en modo test
-   - Has corregido la configuración
+---
 
 ## 🆘 Solución de Problemas
+
+Si encuentras problemas durante la configuración o uso de la pasarela de pagos, revisa las siguientes soluciones comunes:
 
 ### Error: "Gateway configuration error"
 
