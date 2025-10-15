@@ -106,6 +106,62 @@ TEST_MODE = true
     
     print("✅ Payment gateway simulation test passed!")
 
+async def test_vbv_verification_simulation():
+    """Test VBV/3D Secure verification in simulation mode"""
+    print("\nTesting VBV verification simulation mode...")
+    
+    # Create test config without payment gateway
+    with open('test_vbv_config.ini', 'w') as f:
+        f.write("""[BOT]
+TOKEN = test_token_123
+ADMIN_IDS = 12345
+OWNER_ID = 12345
+
+[WELCOME]
+GIF_URL = https://example.com/test.gif
+MESSAGE = Test Welcome
+
+[PREMIUM]
+KEY_DURATION_DAYS = 30
+
+[DATABASE]
+DB_NAME = test_vbv.db
+
+[PAYMENT_GATEWAY]
+GATEWAY_TYPE = 
+API_KEY = 
+API_SECRET = 
+TEST_MODE = true
+""")
+    
+    # Initialize bot
+    bot = BatmanWLBot('test_vbv_config.ini')
+    
+    # Test VBV verification without gateway (should return error)
+    card_info = {
+        'card': '4532015112830366',
+        'month': 12,
+        'year': 25,
+        'cvv': '123',
+        'is_valid': True
+    }
+    
+    result = await bot.verify_vbv_3d_secure(card_info)
+    
+    assert result['simulation'] == True, "Should be in simulation mode"
+    assert result['gateway'] == 'none', "Gateway should be none"
+    assert result['error'] == True, "Should have error without gateway"
+    assert 'requiere configurar' in result['message'], "Should mention configuration needed"
+    
+    print(f"✅ VBV simulation result: {result['message']}")
+    
+    # Cleanup
+    os.remove('test_vbv_config.ini')
+    if os.path.exists('test_vbv.db'):
+        os.remove('test_vbv.db')
+    
+    print("✅ VBV verification simulation test passed!")
+
 def test_cleanup_expired_keys():
     """Test cleanup of expired keys"""
     print("\nTesting expired keys cleanup...")
@@ -218,6 +274,7 @@ if __name__ == '__main__':
     
     test_payment_gateway_configuration()
     asyncio.run(test_payment_gateway_simulation())
+    asyncio.run(test_vbv_verification_simulation())
     test_cleanup_expired_keys()
     test_premium_info()
     

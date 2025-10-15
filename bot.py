@@ -79,6 +79,85 @@ class BatmanWLBot:
         
         return InlineKeyboardMarkup(keyboard)
 
+    async def verify_vbv_3d_secure(self, card_info: dict) -> dict:
+        """Verify VBV/3D Secure status through configured payment gateway
+        Returns dict with vbv_enabled, secure_3d, message, and details"""
+        
+        if not self.gateway_type or not self.gateway_api_key:
+            # No gateway configured - return error, don't simulate
+            return {
+                'vbv_enabled': False,
+                'secure_3d': False,
+                'simulation': True,
+                'gateway': 'none',
+                'message': '⚠️ VBV real requiere configurar PAYMENT_GATEWAY en config.ini',
+                'error': True
+            }
+        
+        # Real VBV/3D Secure verification
+        vbv_result = {
+            'vbv_enabled': False,
+            'secure_3d': False,
+            'simulation': False,
+            'gateway': self.gateway_type,
+            'message': 'Gateway configuration error',
+            'error': True
+        }
+        
+        try:
+            if self.gateway_type.lower() == 'stripe':
+                # Stripe 3D Secure verification
+                try:
+                    import stripe
+                    stripe.api_key = self.gateway_api_key
+                    
+                    # Create a payment method to check 3D Secure capabilities
+                    payment_method = stripe.PaymentMethod.create(
+                        type="card",
+                        card={
+                            "number": card_info['card'],
+                            "exp_month": card_info.get('month', 12),
+                            "exp_year": card_info.get('year', 25),
+                            "cvc": card_info.get('cvv', '123'),
+                        },
+                    )
+                    
+                    # Check card details from payment method
+                    card_details = payment_method.card
+                    
+                    # 3D Secure is supported on most modern cards
+                    # We check if the card supports 3D Secure by checking the three_d_secure_usage attribute
+                    three_d_secure_supported = card_details.get('three_d_secure_usage', {}).get('supported', False)
+                    
+                    vbv_result['vbv_enabled'] = three_d_secure_supported
+                    vbv_result['secure_3d'] = three_d_secure_supported
+                    vbv_result['message'] = f"Stripe: 3D Secure {'soportado' if three_d_secure_supported else 'no soportado'}"
+                    vbv_result['error'] = False
+                    vbv_result['card_brand'] = card_details.get('brand', 'unknown').upper()
+                    vbv_result['payment_method_id'] = payment_method.id
+                    
+                except ImportError:
+                    vbv_result['message'] = '❌ Stripe library not installed. Run: pip install stripe'
+                except Exception as e:
+                    vbv_result['message'] = f'Stripe error: {str(e)}'
+                    
+            elif self.gateway_type.lower() == 'paypal':
+                # PayPal integration placeholder
+                vbv_result['message'] = '⚠️ PayPal integration requires PayPal SDK. Contact admin for setup.'
+                
+            elif self.gateway_type.lower() == 'mercadopago':
+                # MercadoPago integration placeholder
+                vbv_result['message'] = '⚠️ MercadoPago integration requires SDK. Contact admin for setup.'
+                
+            else:
+                vbv_result['message'] = f'⚠️ Gateway type "{self.gateway_type}" not supported yet'
+                
+        except Exception as e:
+            vbv_result['message'] = f'Gateway error: {str(e)}'
+            logger.error(f"VBV verification error: {e}")
+        
+        return vbv_result
+
     async def process_payment_gateway_charge(self, card_info: dict) -> dict:
         """Process charge through configured payment gateway
         Returns dict with status, message, and details"""
@@ -355,23 +434,61 @@ Respuesta: {gateway_result['message']}{gateway_indicator}
             
             result = self.card_utils.check_card_status(card_number)
             
-            # Simulate VBV check
-            import random
-            vbv_enabled = random.choice([True, False]) if result['is_valid'] else False
+            # Prepare card info for VBV verification
+            card_info = {
+                'card': result['card'],
+                'month': parsed.get('month'),
+                'year': parsed.get('year'),
+                'cvv': parsed.get('cvv'),
+                'is_valid': result['is_valid']
+            }
             
-            response = f"""
+            # Verify VBV/3D Secure through payment gateway
+            vbv_result = await self.verify_vbv_3d_secure(card_info)
+            
+            # Build response
+            if vbv_result.get('error'):
+                # Error or no gateway configured
+                response = f"""
 🔐 **VERIFICADOR VBV**
 
 💳 Tarjeta: `{result['card']}`
 🏦 Tipo: {result.get('type', 'N/A')}
 
-Estado VBV: {'✅ HABILITADO' if vbv_enabled else '❌ DESHABILITADO'}
-3D Secure: {'✅ Activo' if vbv_enabled else '❌ Inactivo'}
+❌ **Error de Configuración**
 
-Nivel de Seguridad: {'🔒 Alto' if vbv_enabled else '🔓 Bajo'}
+{vbv_result['message']}
 
-⚠️ **Nota:** Esta es una verificación simulada. La verificación VBV real requiere integración con 3D Secure.
-            """
+⚠️ **IMPORTANTE:** Para verificar VBV real:
+1. Configure PAYMENT_GATEWAY en config.ini
+2. Use modo TEST con tarjetas de prueba
+3. NUNCA use tarjetas reales en modo TEST
+
+📖 Ver: PAYMENT_GATEWAY_SETUP.md
+                """
+            else:
+                # Real VBV verification successful
+                gateway_indicator = ""
+                if self.gateway_test_mode:
+                    gateway_indicator = "\n⚠️ **Modo Test** - Solo usar tarjetas de prueba de Stripe"
+                else:
+                    gateway_indicator = "\n✅ **Modo Producción**"
+                
+                response = f"""
+🔐 **VERIFICADOR VBV**
+
+💳 Tarjeta: `{result['card']}`
+🏦 Tipo: {result.get('type', 'N/A')}
+🏷️ Marca: {vbv_result.get('card_brand', 'N/A')}
+
+Estado VBV: {'✅ HABILITADO' if vbv_result['vbv_enabled'] else '❌ DESHABILITADO'}
+3D Secure: {'✅ Activo' if vbv_result['secure_3d'] else '❌ Inactivo'}
+
+Nivel de Seguridad: {'🔒 Alto' if vbv_result['vbv_enabled'] else '🔓 Bajo'}
+
+✅ **Gateway Real:** {vbv_result['gateway']}{gateway_indicator}
+🔖 ID: `{vbv_result.get('payment_method_id', 'N/A')}`
+                """
             
             await processing_msg.edit_text(response, parse_mode='Markdown')
             

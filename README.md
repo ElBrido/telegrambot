@@ -7,7 +7,7 @@ Bot profesional de Telegram para verificación de tarjetas de crédito, búsqued
 ### Funcionalidades Principales
 - ✅ **Verificación de Tarjetas (CCN Check)**: Verifica si una tarjeta está activa o inactiva usando algoritmo Luhn
 - 💰 **Prueba de Cargo**: Integración con pasarelas de pago reales (Stripe) o modo simulación (Premium/Admin)
-- 🔐 **Verificador VBV/3D Secure**: Verifica estado de Verified by Visa (Premium/Admin)
+- 🔐 **Verificador VBV/3D Secure**: Verificación real con Stripe 3D Secure cuando está configurado (Premium/Admin)
 - 📊 **Estado de Tarjeta**: Verifica si está activa o inactiva con disponibilidad de saldo (Premium/Admin)
 - 🔍 **Búsqueda de BIN**: Obtén información detallada sobre cualquier BIN (tipo, red, emisor, país)
 - 💳 **Generación Masiva de Tarjetas**: Genera hasta 50 tarjetas válidas con un BIN específico (Premium)
@@ -25,8 +25,8 @@ Bot profesional de Telegram para verificación de tarjetas de crédito, búsqued
 
 ### Comandos de Verificación
 - `/ccn` o `.chk` - Verificación básica de tarjeta
-- `/ch` - Prueba de cargo (Premium/Admin)
-- `/vbv` - Verificador VBV/3D Secure (Premium/Admin)
+- `/ch` - Prueba de cargo real con Stripe (Premium/Admin)
+- `/vbv` - Verificador VBV/3D Secure real con Stripe (Premium/Admin)
 - `/cardstatus` - Estado activo/inactivo (Premium/Admin)
 - `/bin` - Búsqueda de información BIN
 
@@ -89,7 +89,12 @@ python bot.py
 
 #### Pasarela de Pagos (Opcional)
 
-Para usar cargos reales en lugar de simulaciones:
+⚠️ **IMPORTANTE - PREVENCIÓN DE FRAUDE**: 
+- **Solo usa tarjetas de prueba de Stripe en modo TEST**
+- **NUNCA uses tarjetas reales en modo TEST**
+- **Lee [PAYMENT_GATEWAY_SETUP.md](PAYMENT_GATEWAY_SETUP.md)** para evitar alertas de fraude
+
+Para usar cargos reales y VBV real en lugar de simulaciones:
 
 1. **Edita `config.ini` sección `[PAYMENT_GATEWAY]`:**
 ```ini
