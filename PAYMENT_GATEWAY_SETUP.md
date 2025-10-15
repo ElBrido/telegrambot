@@ -219,7 +219,11 @@ TEST_MODE = true
    - Configura alertas en tu pasarela de pago
    - Verifica logs del bot
 
+---
+
 ## 🆘 Solución de Problemas
+
+Si encuentras problemas durante la configuración o uso de la pasarela de pagos, revisa las siguientes soluciones comunes:
 
 ### Error: "Gateway configuration error"
 
