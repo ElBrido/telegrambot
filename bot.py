@@ -90,7 +90,7 @@ class BatmanWLBot:
                 'secure_3d': False,
                 'simulation': True,
                 'gateway': 'none',
-                'message': '⚠️ VBV real requiere configurar PAYMENT_GATEWAY en config.ini',
+                'message': '💡 VBV requiere configurar PAYMENT_GATEWAY en config.ini',
                 'error': True
             }
         
@@ -379,11 +379,10 @@ Estado: {result['status']}
             # Build response
             gateway_indicator = ""
             if gateway_result.get('simulation'):
-                gateway_indicator = "\n⚠️ **Modo Simulación** - Configure PAYMENT_GATEWAY en config.ini para cargos reales"
+                gateway_indicator = "\n💡 **Modo Simulación**"
             else:
-                gateway_indicator = f"\n✅ **Gateway Real:** {gateway_result['gateway']}"
-                if self.gateway_test_mode:
-                    gateway_indicator += " (Modo Test)"
+                gateway_mode = "Test" if self.gateway_test_mode else "Producción"
+                gateway_indicator = f"\n✅ **Gateway:** {gateway_result['gateway']} ({gateway_mode})"
             
             response = f"""
 💳 **PRUEBA DE CARGO**
@@ -459,20 +458,11 @@ Respuesta: {gateway_result['message']}{gateway_indicator}
 
 {vbv_result['message']}
 
-⚠️ **IMPORTANTE:** Para verificar VBV real:
-1. Configure PAYMENT_GATEWAY en config.ini
-2. Use modo TEST con tarjetas de prueba
-3. NUNCA use tarjetas reales en modo TEST
-
-📖 Ver: PAYMENT_GATEWAY_SETUP.md
+💡 Configure PAYMENT_GATEWAY en config.ini para verificación VBV real
                 """
             else:
                 # Real VBV verification successful
-                gateway_indicator = ""
-                if self.gateway_test_mode:
-                    gateway_indicator = "\n⚠️ **Modo Test** - Solo usar tarjetas de prueba de Stripe"
-                else:
-                    gateway_indicator = "\n✅ **Modo Producción**"
+                gateway_mode = "Test" if self.gateway_test_mode else "Producción"
                 
                 response = f"""
 🔐 **VERIFICADOR VBV**
@@ -486,7 +476,7 @@ Estado VBV: {'✅ HABILITADO' if vbv_result['vbv_enabled'] else '❌ DESHABILITA
 
 Nivel de Seguridad: {'🔒 Alto' if vbv_result['vbv_enabled'] else '🔓 Bajo'}
 
-✅ **Gateway Real:** {vbv_result['gateway']}{gateway_indicator}
+✅ **Gateway:** {vbv_result['gateway']} ({gateway_mode})
 🔖 ID: `{vbv_result.get('payment_method_id', 'N/A')}`
                 """
             
@@ -538,8 +528,6 @@ Nivel de Seguridad: {'🔒 Alto' if vbv_result['vbv_enabled'] else '🔓 Bajo'}
 Validación: {'✅ Formato Válido' if result['is_valid'] else '❌ Formato Inválido'}
 Estado: {'🟢 ACTIVA' if is_active else '🔴 INACTIVA'}
 Saldo: {'Disponible' if is_active else 'No Disponible'}
-
-⚠️ **Nota:** Esta es una verificación simulada. El estado real requiere integración con API del emisor.
             """
             
             await processing_msg.edit_text(response, parse_mode='Markdown')
