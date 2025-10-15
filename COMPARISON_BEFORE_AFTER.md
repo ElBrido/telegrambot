@@ -174,43 +174,41 @@ Nivel de Seguridad: 🔒 Alto
 
 ### ANTES:
 ```
-Usuario → /vbv 4532...
+Usuario ejecuta: /vbv 4532...
          ↓
-      [random.choice()]
+   Bot ejecuta: random.choice()
          ↓
-      "✅ HABILITADO" o "❌ DESHABILITADO"
+   Respuesta: "✅ HABILITADO" o "❌ DESHABILITADO" (aleatorio)
          ↓
-      Usuario confundido
+   Usuario recibe info falsa
 ```
 
 ### DESPUÉS (Sin configurar):
 ```
-Usuario → /vbv 4532...
+Usuario ejecuta: /vbv 4532...
          ↓
-      [Verifica gateway]
+   Bot verifica: ¿Gateway configurado?
          ↓
-      "❌ Error de Configuración"
+   Respuesta: "❌ Error de Configuración"
          ↓
-      Instrucciones claras
+   Muestra: Instrucciones claras de configuración
          ↓
-      Usuario lee documentación
-         ↓
-      Configura correctamente
+   Usuario lee documentación y configura
 ```
 
 ### DESPUÉS (Configurado):
 ```
-Usuario → /vbv 4242424242424242
+Usuario ejecuta: /vbv 4242424242424242
          ↓
-      [Stripe Payment Method API]
+   Bot ejecuta: Stripe Payment Method API
          ↓
-      Verificación REAL 3D Secure
+   Stripe verifica: 3D Secure real
          ↓
-      "✅ HABILITADO" (real)
-      + ID de Payment Method
-      + Advertencia de modo Test
+   Respuesta: "✅ HABILITADO" (verificación real)
+              + Payment Method ID
+              + Advertencia modo Test
          ↓
-      Usuario tiene info real
+   Usuario recibe info real y segura
 ```
 
 ---
@@ -221,7 +219,7 @@ Usuario → /vbv 4242424242424242
 ```ini
 [PAYMENT_GATEWAY]
 GATEWAY_TYPE = stripe
-API_KEY = sk_test_51Jxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+API_KEY = sk_test_YOUR_STRIPE_TEST_KEY_HERE
 TEST_MODE = true
 ```
 
