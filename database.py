@@ -220,6 +220,53 @@ class Database:
         conn.close()
         
         return result is not None
+    
+    def cleanup_expired_keys(self) -> int:
+        """Deactivate expired premium keys for database hygiene
+        Returns the number of keys that were deactivated"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        # Find and deactivate expired keys
+        cursor.execute("""
+            UPDATE premium_keys
+            SET is_active = 0
+            WHERE is_active = 1 AND expires_at <= datetime('now')
+        """)
+        
+        count = cursor.rowcount
+        conn.commit()
+        conn.close()
+        
+        if count > 0:
+            logger.info(f"Cleaned up {count} expired premium keys")
+        
+        return count
+    
+    def get_premium_info(self, user_id: int) -> Optional[dict]:
+        """Get premium information for a user including expiration date"""
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT expires_at, activated_at, duration_hours
+            FROM premium_keys
+            WHERE user_id = ? AND is_active = 1 AND expires_at > datetime('now')
+            ORDER BY expires_at DESC
+            LIMIT 1
+        """, (user_id,))
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if not result:
+            return None
+        
+        return {
+            'expires_at': result['expires_at'],
+            'activated_at': result['activated_at'],
+            'duration_hours': result['duration_hours']
+        }
 
     def add_card_check(self, user_id: int, card_number: str, status: str):
         """Log a card check"""
