@@ -3,7 +3,7 @@
 ## Problemas Identificados y Solucionados
 
 ### 1. ⏱️ Expiración de Premium
-**Problema reportado**: "cuando creo un key para premiun y le pongo digamos 1 minuto despues del minuto no se quita el premiun"
+**Problema reportado**: "cuando creo un key para premium y le pongo digamos 1 minuto despues del minuto no se quita el premium"
 
 **Diagnóstico**:
 - El sistema de expiración **SÍ ESTABA FUNCIONANDO CORRECTAMENTE**
@@ -19,7 +19,8 @@
 **Pruebas**:
 ```python
 # Se verificó que después de 1 minuto, el premium efectivamente expira
-# Test completo en test_payment_gateway.py
+# Test: test_cleanup_expired_keys() en test_payment_gateway.py
+# Crea una clave expirada y verifica que cleanup la marca como inactiva
 ```
 
 ### 2. 💳 Pasarela de Pagos Real
