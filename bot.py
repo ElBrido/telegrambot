@@ -39,6 +39,12 @@ class BatmanWLBot:
         self.welcome_msg = self.config.get('WELCOME', 'MESSAGE')
         self.key_duration = int(self.config.get('PREMIUM', 'KEY_DURATION_DAYS'))
         
+        # Payment gateway configuration
+        self.gateway_type = self.config.get('PAYMENT_GATEWAY', 'GATEWAY_TYPE', fallback='')
+        self.gateway_api_key = self.config.get('PAYMENT_GATEWAY', 'API_KEY', fallback='')
+        self.gateway_api_secret = self.config.get('PAYMENT_GATEWAY', 'API_SECRET', fallback='')
+        self.gateway_test_mode = self.config.getboolean('PAYMENT_GATEWAY', 'TEST_MODE', fallback=True)
+        
         self.db = Database(self.config.get('DATABASE', 'DB_NAME'))
         self.card_utils = CardUtils()
         
@@ -72,6 +78,83 @@ class BatmanWLBot:
         keyboard.append([InlineKeyboardButton("ℹ️ Ayuda", callback_data='help')])
         
         return InlineKeyboardMarkup(keyboard)
+
+    async def process_payment_gateway_charge(self, card_info: dict) -> dict:
+        """Process charge through configured payment gateway
+        Returns dict with status, message, and details"""
+        
+        if not self.gateway_type or not self.gateway_api_key:
+            # No gateway configured - use simulation
+            import random
+            is_approved = card_info.get('is_valid', False) and random.random() > 0.3
+            return {
+                'status': 'APPROVED' if is_approved else 'DECLINED',
+                'message': 'Aprobado - CVV Match' if is_approved else 'Fondos Insuficientes',
+                'simulation': True,
+                'gateway': 'simulation'
+            }
+        
+        # Real payment gateway processing
+        gateway_result = {
+            'status': 'ERROR',
+            'message': 'Gateway configuration error',
+            'simulation': False,
+            'gateway': self.gateway_type
+        }
+        
+        try:
+            if self.gateway_type.lower() == 'stripe':
+                # Stripe integration
+                try:
+                    import stripe
+                    stripe.api_key = self.gateway_api_key
+                    
+                    # Create a payment method with the card
+                    payment_method = stripe.PaymentMethod.create(
+                        type="card",
+                        card={
+                            "number": card_info['card'],
+                            "exp_month": card_info.get('month', 12),
+                            "exp_year": card_info.get('year', 25),
+                            "cvc": card_info.get('cvv', '123'),
+                        },
+                    )
+                    
+                    # Create payment intent
+                    intent = stripe.PaymentIntent.create(
+                        amount=100,  # $1.00 in cents
+                        currency='usd',
+                        payment_method=payment_method.id,
+                        confirm=True,
+                        return_url='https://example.com/return'
+                    )
+                    
+                    gateway_result['status'] = 'APPROVED' if intent.status == 'succeeded' else 'DECLINED'
+                    gateway_result['message'] = f"Stripe: {intent.status}"
+                    gateway_result['transaction_id'] = intent.id
+                    
+                except ImportError:
+                    gateway_result['message'] = '❌ Stripe library not installed. Run: pip install stripe'
+                except Exception as e:
+                    gateway_result['message'] = f'Stripe error: {str(e)}'
+                    
+            elif self.gateway_type.lower() == 'paypal':
+                # PayPal integration placeholder
+                gateway_result['message'] = '⚠️ PayPal integration requires PayPal SDK. Contact admin for setup.'
+                
+            elif self.gateway_type.lower() == 'mercadopago':
+                # MercadoPago integration placeholder
+                gateway_result['message'] = '⚠️ MercadoPago integration requires SDK. Contact admin for setup.'
+                
+            else:
+                gateway_result['message'] = f'⚠️ Gateway type "{self.gateway_type}" not supported yet'
+                
+        except Exception as e:
+            gateway_result['message'] = f'Gateway error: {str(e)}'
+            logger.error(f"Payment gateway error: {e}")
+        
+        return gateway_result
+
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command"""
@@ -200,11 +283,28 @@ Estado: {result['status']}
             
             result = self.card_utils.check_card_status(card_number)
             
-            # Simulate charge test
-            import random
-            charge_status = "APPROVED" if result['is_valid'] and random.random() > 0.3 else "DECLINED"
+            # Prepare card info for gateway
+            card_info = {
+                'card': result['card'],
+                'month': parsed.get('month'),
+                'year': parsed.get('year'),
+                'cvv': parsed.get('cvv'),
+                'is_valid': result['is_valid']
+            }
+            
+            # Process through payment gateway
+            gateway_result = await self.process_payment_gateway_charge(card_info)
             
             expiry = self.card_utils.format_expiry(parsed['month'], parsed['year']) if parsed['month'] else "N/A"
+            
+            # Build response
+            gateway_indicator = ""
+            if gateway_result.get('simulation'):
+                gateway_indicator = "\n⚠️ **Modo Simulación** - Configure PAYMENT_GATEWAY en config.ini para cargos reales"
+            else:
+                gateway_indicator = f"\n✅ **Gateway Real:** {gateway_result['gateway']}"
+                if self.gateway_test_mode:
+                    gateway_indicator += " (Modo Test)"
             
             response = f"""
 💳 **PRUEBA DE CARGO**
@@ -214,12 +314,13 @@ Estado: {result['status']}
 📅 Exp: {expiry}
 🔐 CVV: {parsed['cvv'] or 'N/A'}
 
-💰 Monto de prueba: $1.00
-Resultado: {'✅ ' + charge_status if charge_status == 'APPROVED' else '❌ ' + charge_status}
-Respuesta: {'Aprobado - CVV Match' if charge_status == 'APPROVED' else 'Fondos Insuficientes'}
-
-⚠️ **Nota:** Esta es una prueba simulada. El cargo real requiere integración con pasarela de pagos.
+💰 Monto: $1.00 USD
+Estado: {'✅ ' + gateway_result['status'] if gateway_result['status'] == 'APPROVED' else '❌ ' + gateway_result['status']}
+Respuesta: {gateway_result['message']}{gateway_indicator}
             """
+            
+            if gateway_result.get('transaction_id'):
+                response += f"\n🔖 ID Transacción: `{gateway_result['transaction_id']}`"
             
             await processing_msg.edit_text(response, parse_mode='Markdown')
             
@@ -666,6 +767,7 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
             user = self.db.get_user(user_id)
             stats = self.db.get_user_stats(user_id)
             has_premium = self.db.has_premium(user_id)
+            premium_info = self.db.get_premium_info(user_id)
             
             response = f"""
 📊 **Tus Estadísticas**
@@ -674,9 +776,14 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
 🆔 ID: {user_id}
 🎭 Rol: {user['role']}
 ⭐ Premium: {'✅ Activo' if has_premium else '❌ Inactivo'}
-
-📈 Verificaciones: {stats['total_checks']}
-            """
+"""
+            
+            if premium_info:
+                from datetime import datetime
+                expires_at = datetime.fromisoformat(premium_info['expires_at'])
+                response += f"📅 Expira: {expires_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
+            
+            response += f"\n📈 Verificaciones: {stats['total_checks']}\n"
             
             await query.message.reply_text(response, parse_mode='Markdown')
         elif query.data == 'admin_panel':
@@ -963,8 +1070,19 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
             self.handle_dot_commands
         ))
         
+        # Schedule periodic cleanup of expired keys (every hour)
+        job_queue = application.job_queue
+        job_queue.run_repeating(self.cleanup_expired_keys_job, interval=3600, first=10)
+        
         logger.info("🦇 BatmanWL Bot iniciado!")
+        logger.info(f"💳 Payment Gateway: {self.gateway_type if self.gateway_type else 'Simulation Mode'}")
         application.run_polling(allowed_updates=Update.ALL_TYPES)
+    
+    async def cleanup_expired_keys_job(self, context: ContextTypes.DEFAULT_TYPE):
+        """Job to clean up expired premium keys periodically"""
+        count = self.db.cleanup_expired_keys()
+        if count > 0:
+            logger.info(f"🧹 Cleaned up {count} expired premium keys")
 
 
 def main():

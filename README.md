@@ -6,14 +6,15 @@ Bot profesional de Telegram para verificación de tarjetas de crédito, búsqued
 
 ### Funcionalidades Principales
 - ✅ **Verificación de Tarjetas (CCN Check)**: Verifica si una tarjeta está activa o inactiva usando algoritmo Luhn
-- 💰 **Prueba de Cargo**: Simula cargo de $1.00 para verificar aprobación (Premium/Admin)
+- 💰 **Prueba de Cargo**: Integración con pasarelas de pago reales (Stripe) o modo simulación (Premium/Admin)
 - 🔐 **Verificador VBV/3D Secure**: Verifica estado de Verified by Visa (Premium/Admin)
 - 📊 **Estado de Tarjeta**: Verifica si está activa o inactiva con disponibilidad de saldo (Premium/Admin)
 - 🔍 **Búsqueda de BIN**: Obtén información detallada sobre cualquier BIN (tipo, red, emisor, país)
 - 💳 **Generación Masiva de Tarjetas**: Genera hasta 50 tarjetas válidas con un BIN específico (Premium)
 - 🎭 **Sistema de Roles**: User/Admin/Owner con permisos diferenciados
-- 🔑 **Sistema Premium**: Claves de acceso con duración configurable
+- 🔑 **Sistema Premium**: Claves de acceso con duración configurable y expiración automática
 - 📈 **Estadísticas Completas**: Seguimiento de verificaciones y estadísticas globales
+- 💳 **Pasarelas de Pago**: Soporte para Stripe, PayPal, MercadoPago (configurables)
 
 ### Interfaz y Usabilidad
 - 🎬 **Panel de Inicio con GIF**: Bienvenida animada profesional personalizable
@@ -83,6 +84,38 @@ cp config.example.ini config.ini
 ```bash
 python bot.py
 ```
+
+### ⚙️ Configuración Avanzada
+
+#### Pasarela de Pagos (Opcional)
+
+Para usar cargos reales en lugar de simulaciones:
+
+1. **Edita `config.ini` sección `[PAYMENT_GATEWAY]`:**
+```ini
+[PAYMENT_GATEWAY]
+GATEWAY_TYPE = stripe  # stripe, paypal, mercadopago, o vacío para simulación
+API_KEY = tu_clave_api_aqui
+API_SECRET = tu_clave_secreta_aqui
+TEST_MODE = true  # true para pruebas, false para producción
+```
+
+2. **Instala la librería correspondiente:**
+```bash
+# Para Stripe
+pip install stripe
+
+# Para PayPal (en desarrollo)
+pip install paypalrestsdk
+
+# Para MercadoPago (en desarrollo)
+pip install mercadopago
+```
+
+3. **Consulta la guía completa:**
+   - Ver [PAYMENT_GATEWAY_SETUP.md](PAYMENT_GATEWAY_SETUP.md) para instrucciones detalladas
+
+**Nota:** Si no configuras una pasarela, el bot funcionará en modo simulación (cargos falsos para pruebas).
 
 ### 🐳 Instalación con Docker (Recomendado para Producción)
 
