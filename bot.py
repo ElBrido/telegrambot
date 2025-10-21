@@ -17,6 +17,7 @@ from telegram.ext import (
 )
 from database import Database
 from card_utils import CardUtils
+from payment_gateways import GatewayManager
 
 # Configure logging
 logging.basicConfig(
@@ -48,6 +49,9 @@ class BatmanWLBot:
         self.db = Database(self.config.get('DATABASE', 'DB_NAME'))
         self.card_utils = CardUtils()
         
+        # Initialize gateway manager
+        self.gateway_manager = GatewayManager(self.config)
+        
         # Register owner in database
         self.db.add_user(self.owner_id, role='owner')
         for admin_id in self.admin_ids:
@@ -74,6 +78,7 @@ class BatmanWLBot:
         
         if is_admin:
             keyboard.append([InlineKeyboardButton("⚙️ Panel Admin", callback_data='admin_panel')])
+            keyboard.append([InlineKeyboardButton("🌐 Gateways", callback_data='gateway_panel')])
         
         keyboard.append([InlineKeyboardButton("ℹ️ Ayuda", callback_data='help')])
         
@@ -977,6 +982,50 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
             """
             
             await query.message.reply_text(help_text, parse_mode='Markdown')
+        elif query.data == 'gateway_panel':
+            if not self.db.is_admin(user_id):
+                await query.message.reply_text("❌ No tienes permiso")
+            else:
+                # Get online gateways
+                online_gateways = self.gateway_manager.get_online_gateways()
+                
+                response = "🌐 **Panel de Gateways de Pago**\n\n"
+                response += "**Estado de Gateways:**\n\n"
+                
+                # Gateway details with type and status
+                gateway_info = [
+                    ("adyen", "Adyen Auth", "PREMIUM", "Auth + VBV"),
+                    ("bluepay", "BluePay CCN", "FREE", "CCN Check"),
+                    ("braintree", "Braintree", "PREMIUM", "Auth + Fraud"),
+                    ("exact", "Exact CCN", "FREE", "CCN Valid"),
+                    ("chase", "Chase", "PREMIUM", "Full Check"),
+                    ("payeezy", "Payeezy", "PREMIUM", "Charge Test"),
+                    ("payflow", "Payflow", "PREMIUM", "Charge Test"),
+                    ("paypal", "PayPal", "FREE/PREMIUM", "Auth"),
+                    ("sewin", "Sewin CCN", "FREE", "CCN Check"),
+                    ("stripe", "Stripe Auth", "FREE/PREMIUM", "Auth + VBV"),
+                ]
+                
+                for gw_id, gw_name, gw_type, gw_feature in gateway_info:
+                    is_online = any(g['name'] == gw_id and g['configured'] for g in online_gateways)
+                    status_icon = "🟢" if is_online else "🔴"
+                    type_icon = "💎" if "PREMIUM" in gw_type else "🆓"
+                    
+                    response += f"{status_icon} **{gw_name}** {type_icon}\n"
+                    response += f"   Tipo: {gw_type} | {gw_feature}\n"
+                    response += f"   Comando: /{gw_id}\n\n"
+                
+                # CapSolver status
+                capsolver_configured = self.gateway_manager.capsolver is not None and self.gateway_manager.capsolver.is_configured()
+                capsolver_icon = "🟢" if capsolver_configured else "🔴"
+                response += f"{capsolver_icon} **CapSolver** 💎\n"
+                response += f"   Tipo: PREMIUM | Captcha Solver\n"
+                response += f"   Estado: {'Configurado' if capsolver_configured else 'No configurado'}\n\n"
+                
+                response += "\n💡 **Comandos disponibles:**\n"
+                response += "Ver `/gatewayhelp` para comandos detallados\n"
+                
+                await query.message.reply_text(response, parse_mode='Markdown')
 
     # Admin panel commands
     async def ban_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1138,6 +1187,240 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
                 f"❌ Comando desconocido: {command}\n"
                 "Usa /help para ver comandos disponibles"
             )
+    
+    # Gateway Commands
+    async def gateway_help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Show detailed gateway help"""
+        help_text = """
+🌐 **Gateways de Pago Disponibles**
+
+**Comandos de Gateway:**
+
+**FREE (Gratis):**
+• `/bluepay <card>` - BluePay CCN validation
+• `/exact <card>` - Exact CCN check
+• `/sewin <card>` - Sewin CCN validation
+• `/paypal <card>` - PayPal basic check
+
+**PREMIUM (Pago):**
+• `/adyen <card>` - Adyen Auth + VBV
+• `/braintree <card>` - Braintree Auth
+• `/chase <card>` - Chase full check
+• `/payeezy <card>` - Payeezy charge test
+• `/payflow <card>` - Payflow charge test
+• `/stripe <card>` - Stripe Auth + VBV
+
+**Formato:**
+`/gateway 4532015112830366|12|25|123`
+
+**Características:**
+🆓 FREE - Validación básica CCN
+💎 PREMIUM - Auth, VBV, charge testing
+
+**Estado:**
+Ver `/gateways` para ver gateways online
+        """
+        await update.message.reply_text(help_text, parse_mode='Markdown')
+    
+    async def adyen_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /adyen command - PREMIUM"""
+        await self._gateway_check(update, context, 'adyen', premium_required=True)
+    
+    async def bluepay_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /bluepay command - FREE"""
+        await self._gateway_check(update, context, 'bluepay', premium_required=False)
+    
+    async def braintree_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /braintree command - PREMIUM"""
+        await self._gateway_check(update, context, 'braintree', premium_required=True)
+    
+    async def exact_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /exact command - FREE"""
+        await self._gateway_check(update, context, 'exact', premium_required=False)
+    
+    async def chase_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /chase command - PREMIUM"""
+        await self._gateway_check(update, context, 'chase', premium_required=True)
+    
+    async def payeezy_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /payeezy command - PREMIUM (Charge test)"""
+        await self._gateway_charge(update, context, 'payeezy', premium_required=True)
+    
+    async def payflow_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /payflow command - PREMIUM (Charge test)"""
+        await self._gateway_charge(update, context, 'payflow', premium_required=True)
+    
+    async def paypal_gateway_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /paypal command - FREE"""
+        await self._gateway_check(update, context, 'paypal', premium_required=False)
+    
+    async def sewin_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /sewin command - FREE"""
+        await self._gateway_check(update, context, 'sewin', premium_required=False)
+    
+    async def stripe_gateway_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /stripe command - FREE (basic) / PREMIUM (VBV)"""
+        await self._gateway_check(update, context, 'stripe', premium_required=False)
+    
+    async def gateways_status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Show gateway status"""
+        online_gateways = self.gateway_manager.get_online_gateways()
+        
+        response = "🌐 **Estado de Gateways**\n\n"
+        
+        for gw in online_gateways:
+            status = "🟢 Online" if gw['configured'] else "🔴 Offline"
+            response += f"{status} {gw['name'].upper()}\n"
+        
+        capsolver_status = "🟢 Online" if self.gateway_manager.capsolver and self.gateway_manager.capsolver.is_configured() else "🔴 Offline"
+        response += f"\n{capsolver_status} CapSolver (Captcha)\n"
+        
+        await update.message.reply_text(response, parse_mode='Markdown')
+    
+    async def _gateway_check(self, update: Update, context: ContextTypes.DEFAULT_TYPE, 
+                            gateway_name: str, premium_required: bool = False):
+        """Generic gateway check handler"""
+        user_id = update.effective_user.id
+        
+        # Check premium access
+        if premium_required and not (self.db.has_premium(user_id) or self.db.is_admin(user_id)):
+            await update.message.reply_text(
+                f"❌ **{gateway_name.upper()} requiere Premium**\n"
+                "Usa /redeem <clave> para activar",
+                parse_mode='Markdown'
+            )
+            return
+        
+        # Check args
+        if not context.args:
+            await update.message.reply_text(
+                f"❌ Uso: /{gateway_name} <tarjeta>\n"
+                f"Ejemplo: /{gateway_name} 4532015112830366|12|25|123"
+            )
+            return
+        
+        # Parse card
+        card_input = ''.join(context.args)
+        card_info = self.card_utils.parse_card(card_input)
+        
+        if not card_info:
+            await update.message.reply_text("❌ Formato de tarjeta inválido")
+            return
+        
+        # Check if gateway is available
+        if not self.gateway_manager.is_gateway_available(gateway_name):
+            await update.message.reply_text(
+                f"❌ {gateway_name.upper()} no está configurado\n"
+                "Contacta al administrador"
+            )
+            return
+        
+        # Process with gateway
+        processing_msg = await update.message.reply_text(
+            f"🔄 Procesando con {gateway_name.upper()}..."
+        )
+        
+        try:
+            gateway = self.gateway_manager.get_gateway(gateway_name)
+            result = await gateway.check_card(card_info)
+            
+            # Format response
+            response = f"""
+🌐 **{gateway_name.upper()} Check**
+
+💳 Tarjeta: {card_info['card'][:4]}****{card_info['card'][-4:]}
+📅 Exp: {card_info.get('month', 'XX')}/{card_info.get('year', 'XX')}
+
+📊 **Resultado:**
+{result.message}
+
+{'🟢 LIVE' if result.is_live else '🔴 DEAD'}
+{'🔐 VBV: Enabled' if result.vbv_enabled else ''}
+            """
+            
+            await processing_msg.edit_text(response, parse_mode='Markdown')
+            
+            # Record check
+            self.db.record_check(user_id, 'gateway', gateway_name)
+            
+        except Exception as e:
+            logger.error(f"Gateway {gateway_name} error: {e}")
+            await processing_msg.edit_text(
+                f"❌ Error procesando con {gateway_name.upper()}\n{str(e)}"
+            )
+    
+    async def _gateway_charge(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
+                             gateway_name: str, premium_required: bool = True):
+        """Generic gateway charge handler"""
+        user_id = update.effective_user.id
+        
+        # Check premium access
+        if premium_required and not (self.db.has_premium(user_id) or self.db.is_admin(user_id)):
+            await update.message.reply_text(
+                f"❌ **{gateway_name.upper()} Charge requiere Premium**\n"
+                "Usa /redeem <clave> para activar",
+                parse_mode='Markdown'
+            )
+            return
+        
+        # Check args
+        if not context.args:
+            await update.message.reply_text(
+                f"❌ Uso: /{gateway_name} <tarjeta>\n"
+                f"Ejemplo: /{gateway_name} 4532015112830366|12|25|123"
+            )
+            return
+        
+        # Parse card
+        card_input = ''.join(context.args)
+        card_info = self.card_utils.parse_card(card_input)
+        
+        if not card_info:
+            await update.message.reply_text("❌ Formato de tarjeta inválido")
+            return
+        
+        # Check if gateway is available
+        if not self.gateway_manager.is_gateway_available(gateway_name):
+            await update.message.reply_text(
+                f"❌ {gateway_name.upper()} no está configurado\n"
+                "Contacta al administrador"
+            )
+            return
+        
+        # Process charge
+        processing_msg = await update.message.reply_text(
+            f"🔄 Procesando cargo con {gateway_name.upper()}..."
+        )
+        
+        try:
+            gateway = self.gateway_manager.get_gateway(gateway_name)
+            result = await gateway.charge_card(card_info, 1.00)
+            
+            # Format response
+            response = f"""
+💰 **{gateway_name.upper()} Charge Test**
+
+💳 Tarjeta: {card_info['card'][:4]}****{card_info['card'][-4:]}
+📅 Exp: {card_info.get('month', 'XX')}/{card_info.get('year', 'XX')}
+💵 Monto: ${result.details.get('amount', 1.00):.2f}
+
+📊 **Resultado:**
+{result.message}
+
+{'✅ CHARGED' if result.charged else '❌ DECLINED'}
+{'🟢 Card LIVE' if result.is_live else ''}
+            """
+            
+            await processing_msg.edit_text(response, parse_mode='Markdown')
+            
+            # Record check
+            self.db.record_check(user_id, 'charge', gateway_name)
+            
+        except Exception as e:
+            logger.error(f"Gateway {gateway_name} charge error: {e}")
+            await processing_msg.edit_text(
+                f"❌ Error procesando cargo con {gateway_name.upper()}\n{str(e)}"
+            )
 
     def run(self):
         """Start the bot"""
@@ -1165,6 +1448,20 @@ Ejemplos: `/ccn`, `.chk`, `..ccn` funcionan igual
         application.add_handler(CommandHandler("addcredits", self.addcredits_command))
         application.add_handler(CommandHandler("broadcast", self.broadcast_command))
         application.add_handler(CommandHandler("statsadmin", self.stats_admin_command))
+        
+        # Gateway command handlers
+        application.add_handler(CommandHandler("gatewayhelp", self.gateway_help_command))
+        application.add_handler(CommandHandler("gateways", self.gateways_status_command))
+        application.add_handler(CommandHandler("adyen", self.adyen_command))
+        application.add_handler(CommandHandler("bluepay", self.bluepay_command))
+        application.add_handler(CommandHandler("braintree", self.braintree_command))
+        application.add_handler(CommandHandler("exact", self.exact_command))
+        application.add_handler(CommandHandler("chase", self.chase_command))
+        application.add_handler(CommandHandler("payeezy", self.payeezy_command))
+        application.add_handler(CommandHandler("payflow", self.payflow_command))
+        application.add_handler(CommandHandler("paypalgateway", self.paypal_gateway_command))
+        application.add_handler(CommandHandler("sewin", self.sewin_command))
+        application.add_handler(CommandHandler("stripegateway", self.stripe_gateway_command))
         
         # Button handler
         application.add_handler(CallbackQueryHandler(self.button_handler))

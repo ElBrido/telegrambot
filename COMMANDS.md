@@ -183,6 +183,200 @@ Referencia completa de todos los comandos disponibles. Todos los comandos soport
 
 ---
 
+## 🌐 Comandos de Payment Gateways
+
+### /gatewayhelp
+**Ver ayuda de gateways**
+
+**Uso:** `/gatewayhelp`
+
+**Muestra:**
+- Lista de todos los gateways
+- Comandos disponibles
+- Tipo (FREE/PREMIUM)
+- Características de cada gateway
+
+---
+
+### /gateways
+**Ver estado de gateways**
+
+**Uso:** `/gateways`
+
+**Muestra:**
+- Estado online/offline
+- Gateways configurados
+- Estado de CapSolver
+
+---
+
+### /adyen
+**Adyen Auth + VBV (PREMIUM)**
+
+**Uso:**
+```
+/adyen <tarjeta>|<mes>|<año>|<cvv>
+/adyen 4532015112830366|12|25|123
+```
+
+**Características:**
+- Autorización de tarjeta
+- Verificación VBV/3D Secure
+- Cobertura global
+- Requiere Premium o Admin
+
+---
+
+### /bluepay
+**BluePay CCN Validation (FREE)**
+
+**Uso:**
+```
+/bluepay <tarjeta>|<mes>|<año>|<cvv>
+/bluepay 4532015112830366|12|25|123
+```
+
+**Características:**
+- Validación de número de tarjeta
+- Verificación AVS
+- Gratis para todos
+
+---
+
+### /braintree
+**Braintree Auth (PREMIUM)**
+
+**Uso:**
+```
+/braintree <tarjeta>|<mes>|<año>|<cvv>
+/braintree 4532015112830366|12|25|123
+```
+
+**Características:**
+- Autorización PayPal-owned
+- Detección de fraude
+- 3D Secure fuerte
+- Requiere Premium o Admin
+
+---
+
+### /exact
+**Exact CCN Check (FREE)**
+
+**Uso:**
+```
+/exact <tarjeta>|<mes>|<año>|<cvv>
+/exact 4532015112830366|12|25|123
+```
+
+**Características:**
+- Validación rápida CCN
+- Info básica de tarjeta
+- Gratis para todos
+
+---
+
+### /chase
+**Chase Paymentech (PREMIUM)**
+
+**Uso:**
+```
+/chase <tarjeta>|<mes>|<año>|<cvv>
+/chase 4532015112830366|12|25|123
+```
+
+**Características:**
+- Procesador bancario mayor
+- Validación completa
+- Alto trust score
+- Requiere Premium o Admin
+
+---
+
+### /payeezy
+**Payeezy Charge Test (PREMIUM)**
+
+**Uso:**
+```
+/payeezy <tarjeta>|<mes>|<año>|<cvv>
+/payeezy 4532015112830366|12|25|123
+```
+
+**Características:**
+- Prueba de cargo real ($1.00)
+- Detección de fraude
+- First Data infrastructure
+- Requiere Premium o Admin
+
+---
+
+### /payflow
+**PayPal Payflow Charge (PREMIUM)**
+
+**Uso:**
+```
+/payflow <tarjeta>|<mes>|<año>|<cvv>
+/payflow 4532015112830366|12|25|123
+```
+
+**Características:**
+- Prueba de cargo real ($1.00)
+- Infraestructura PayPal
+- Procesamiento confiable
+- Requiere Premium o Admin
+
+---
+
+### /paypalgateway
+**PayPal Gateway (FREE)**
+
+**Uso:**
+```
+/paypalgateway <tarjeta>|<mes>|<año>|<cvv>
+/paypalgateway 4532015112830366|12|25|123
+```
+
+**Características:**
+- Validación de tarjeta
+- Cobertura global
+- Protección al comprador
+- Gratis (básico)
+
+---
+
+### /sewin
+**Sewin CCN Check (FREE)**
+
+**Uso:**
+```
+/sewin <tarjeta>|<mes>|<año>|<cvv>
+/sewin 4532015112830366|12|25|123
+```
+
+**Características:**
+- Validación rápida CCN
+- Check de número de tarjeta
+- Gratis para todos
+
+---
+
+### /stripegateway
+**Stripe Auth + VBV (FREE/PREMIUM)**
+
+**Uso:**
+```
+/stripegateway <tarjeta>|<mes>|<año>|<cvv>
+/stripegateway 4532015112830366|12|25|123
+```
+
+**Características:**
+- Autorización estándar
+- Verificación 3D Secure
+- Gratis (básico)
+- Premium (VBV avanzado)
+
+---
+
 ## 🔐 Comandos de Administración
 
 ### /genkey
@@ -327,6 +521,8 @@ Usa los botones del menú en `/start` para acceso rápido a comandos comunes.
 | Generación | `/gen` | Generación de tarjetas (Premium) |
 | Usuario | `/start` `/menu` `/stats` `/help` | Gestión de cuenta |
 | Premium | `/redeem` | Sistema premium |
+| Gateways | `/adyen` `/bluepay` `/braintree` `/exact` `/chase` `/payeezy` `/payflow` `/paypalgateway` `/sewin` `/stripegateway` | Gateways de pago |
+| Gateway Info | `/gatewayhelp` `/gateways` | Información de gateways |
 | Admin | `/genkey` `/ban` `/unban` `/addcredits` `/broadcast` `/statsadmin` | Administración |
 
 ---
@@ -363,6 +559,27 @@ Usa los botones del menú en `/start` para acceso rápido a comandos comunes.
 /ban 123456789
 /addcredits 123456789 100
 /broadcast ¡Nueva función disponible!
+```
+
+### Gateways de Pago
+```
+# FREE Gateways
+/bluepay 4532015112830366|12|25|123
+/exact 4532015112830366|12|25|123
+/sewin 4532015112830366|12|25|123
+/paypalgateway 4532015112830366|12|25|123
+
+# PREMIUM Gateways
+/adyen 4532015112830366|12|25|123
+/braintree 4532015112830366|12|25|123
+/chase 4532015112830366|12|25|123
+/payeezy 4532015112830366|12|25|123
+/payflow 4532015112830366|12|25|123
+/stripegateway 4532015112830366|12|25|123
+
+# Ver estado
+/gateways
+/gatewayhelp
 ```
 
 ---
