@@ -14,7 +14,9 @@ Bot profesional de Telegram para verificación de tarjetas de crédito, búsqued
 - 🎭 **Sistema de Roles**: User/Admin/Owner con permisos diferenciados
 - 🔑 **Sistema Premium**: Claves de acceso con duración configurable y expiración automática
 - 📈 **Estadísticas Completas**: Seguimiento de verificaciones y estadísticas globales
-- 💳 **Pasarelas de Pago**: Soporte para Stripe, PayPal, MercadoPago (configurables)
+- 💳 **Pasarelas de Pago**: Soporte para múltiples gateways (configurables)
+- 🌐 **10+ Gateways**: Adyen, BluePay, Braintree, Exact, Chase, Payeezy, Payflow, PayPal, Sewin, Stripe
+- 🤖 **CapSolver**: Integración para resolver captchas durante procesamiento
 
 ### Interfaz y Usabilidad
 - 🎬 **Panel de Inicio con GIF**: Bienvenida animada profesional personalizable
@@ -29,6 +31,12 @@ Bot profesional de Telegram para verificación de tarjetas de crédito, búsqued
 - `/vbv` - Verificador VBV/3D Secure real con Stripe (Premium/Admin)
 - `/cardstatus` - Estado activo/inactivo (Premium/Admin)
 - `/bin` - Búsqueda de información BIN
+
+### Comandos de Gateway (Nuevo)
+- **FREE**: `/bluepay`, `/exact`, `/sewin`, `/paypalgateway` - Validación básica CCN
+- **PREMIUM**: `/adyen`, `/braintree`, `/chase`, `/payeezy`, `/payflow`, `/stripegateway` - Auth, VBV, Charge testing
+- `/gatewayhelp` - Ver ayuda de gateways
+- `/gateways` - Ver estado de gateways online
 
 ## 📦 Instalación
 
@@ -87,35 +95,60 @@ python bot.py
 
 ### ⚙️ Configuración Avanzada
 
-#### Pasarela de Pagos (Opcional)
+#### Pasarelas de Pago (Opcional)
 
-Para usar cargos reales y VBV real en lugar de simulaciones:
+Para usar cargos reales y VBV real en lugar de simulaciones, el bot soporta múltiples gateways:
 
-1. **Edita `config.ini` sección `[PAYMENT_GATEWAY]`:**
+**Gateways Disponibles:**
+
+**🆓 FREE (Gratis):**
+- **BluePay**: Validación CCN básica
+- **Exact**: Check rápido de CCN
+- **Sewin**: Validación de número
+- **PayPal**: Check básico de tarjeta
+
+**💎 PREMIUM (Requiere Premium):**
+- **Adyen**: Auth + VBV/3D Secure
+- **Braintree**: Auth con detección de fraude
+- **Chase**: Procesador bancario completo
+- **Payeezy**: Pruebas de cargo real
+- **Payflow**: Cargo con infraestructura PayPal
+- **Stripe**: Auth + VBV avanzado
+
+**Configuración:**
+
+1. **Edita `config.ini` con las secciones de gateway:**
 ```ini
-[PAYMENT_GATEWAY]
-GATEWAY_TYPE = stripe  # stripe, paypal, mercadopago, o vacío para simulación
-API_KEY = tu_clave_api_aqui
-API_SECRET = tu_clave_secreta_aqui
-TEST_MODE = true  # true para pruebas, false para producción
+[STRIPE_AUTH]
+API_KEY = sk_test_xxxxx
+TEST_MODE = true
+
+[ADYEN]
+API_KEY = tu_api_key
+MERCHANT_ACCOUNT = tu_merchant
+TEST_MODE = true
+
+[CAPSOLVER]
+API_KEY = tu_capsolver_key  # Para resolver captchas
 ```
 
-2. **Instala la librería correspondiente:**
+2. **Instala las librerías necesarias:**
 ```bash
 # Para Stripe
 pip install stripe
 
-# Para PayPal (en desarrollo)
-pip install paypalrestsdk
+# Para Braintree
+pip install braintree
 
-# Para MercadoPago (en desarrollo)
-pip install mercadopago
+# Requests para CapSolver y otros
+pip install requests
 ```
 
 3. **Consulta la guía completa:**
    - Ver [PAYMENT_GATEWAY_SETUP.md](PAYMENT_GATEWAY_SETUP.md) para instrucciones detalladas
+   - Ver `config.example.ini` para todas las opciones de configuración
 
-**Nota:** Si no configuras una pasarela, el bot funcionará en modo simulación (cargos falsos para pruebas).
+**Nota:** Si no configuras gateways, el bot funcionará en modo simulación (cargos falsos para pruebas).
 
 ### 🐳 Instalación con Docker (Recomendado para Producción)
 
