@@ -400,11 +400,43 @@ Si tienes problemas o preguntas:
 
 - [ ] Integración con APIs reales de verificación
 - [ ] Sistema de logs más robusto
-- [ ] Panel web de administración
+- [x] Panel web de administración (Ver carpeta MBE)
 - [ ] Múltiples idiomas
 - [ ] Sistema de notificaciones
 - [ ] Exportación de datos
 - [ ] Más métodos de pago para premium
+
+## 🌐 MBE Hosting Platform
+
+Este repositorio ahora incluye **MBE** (MadeByError), una plataforma web profesional de hosting completamente separada del bot de Telegram.
+
+### Acceso Rápido a MBE
+📁 **Ubicación**: `/MBE/`
+
+🚀 **Características**:
+- Panel de hosting profesional con tema rojo/guinda
+- Integración con Pterodactyl para gestión de servidores
+- Pagos seguros con Stripe.js
+- Planes configurables y constructor personalizado
+- Registro/login con datos encriptados
+- Dashboard de usuario completo
+- Nodos en México y Ohio
+
+### Inicio Rápido MBE
+```bash
+cd MBE
+./setup.sh
+npm start
+```
+
+📖 **Documentación MBE**:
+- [README.md](MBE/README.md) - Vista general completa
+- [QUICKSTART.md](MBE/QUICKSTART.md) - Inicio en 5 minutos
+- [INSTALLATION.md](MBE/INSTALLATION.md) - Guía de instalación detallada
+- [FEATURES.md](MBE/FEATURES.md) - Lista completa de características
+- [SECURITY.md](MBE/SECURITY.md) - Documentación de seguridad
+
+**Nota**: MBE es un proyecto independiente dentro de este repositorio. No afecta al funcionamiento del bot de Telegram.
 
 ---
 
